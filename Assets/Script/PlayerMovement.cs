@@ -1,14 +1,8 @@
-﻿using System;
-using Cinemachine;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour {
-	public CinemachineFreeLook cam;
 	public Transform camTransform;
-	public float camXSensitivity;
-	public float camYSensitivity;
-
 	public float maxSpeed;
 
 	CharacterController characterController;
@@ -20,19 +14,9 @@ public class PlayerMovement : MonoBehaviour {
 
 		PlayerInput playerInput = GetComponent<PlayerInput>();
 
-		playerInput.actions["Look"].started += OnLook;
-		playerInput.actions["Look"].performed += OnLook;
-		playerInput.actions["Look"].canceled += OnLook;
-
 		playerInput.actions["Move"].started += OnMove;
 		playerInput.actions["Move"].performed += OnMove;
 		playerInput.actions["Move"].canceled += OnMove;
-	}
-
-	void OnLook(InputAction.CallbackContext context) {
-		Vector2 lookInput = context.ReadValue<Vector2>();
-		cam.m_XAxis.Value += camXSensitivity * lookInput.x;
-		cam.m_YAxis.Value += camYSensitivity * lookInput.y;
 	}
 
 	void OnMove(InputAction.CallbackContext context) {
@@ -46,10 +30,10 @@ public class PlayerMovement : MonoBehaviour {
 	}
 
 	void Update() {
-		if (moveInput != Vector2.zero) {
-			moveDirection = camTransform.forward * moveInput.y + camTransform.right * moveInput.x;
-			moveDirection.y = 0;
-		}
+		if (moveInput == Vector2.zero) return;
+		
+		moveDirection = camTransform.forward * moveInput.y + camTransform.right * moveInput.x;
+		moveDirection.y = 0;
 	}
 
 	void FixedUpdate() {
