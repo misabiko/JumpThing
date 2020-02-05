@@ -250,6 +250,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   camTransform: {fileID: 2146265504}
   maxSpeed: 10
+  jumpForce: 50
+  gravityScale: 1
 --- !u!114 &172185911
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -657,8 +659,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cam: {fileID: 1065958103}
   playerInput: {fileID: 172185911}
-  camXSensitivity: 2
-  camYSensitivity: 0.01
+  camXSensitivity: 2.5
+  camYSensitivity: 0.02
 --- !u!1 &1149193106
 GameObject:
   m_ObjectHideFlags: 0

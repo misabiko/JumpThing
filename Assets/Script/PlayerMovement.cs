@@ -4,10 +4,13 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour {
 	public Transform camTransform;
 	public float maxSpeed;
+	public float jumpForce;
+	public float gravityScale;
 
 	CharacterController characterController;
 	Vector2 moveInput;
 	Vector3 moveDirection;
+	Vector3 verticalVel;
 	
 	void Awake() {
 		characterController = GetComponent<CharacterController>();
@@ -17,6 +20,10 @@ public class PlayerMovement : MonoBehaviour {
 		playerInput.actions["Move"].started += OnMove;
 		playerInput.actions["Move"].performed += OnMove;
 		playerInput.actions["Move"].canceled += OnMove;
+
+		playerInput.actions["Jump"].started += OnJump;
+		playerInput.actions["Jump"].performed += OnJump;
+		playerInput.actions["Jump"].canceled += OnJump;
 	}
 
 	void OnMove(InputAction.CallbackContext context) {
@@ -26,17 +33,26 @@ public class PlayerMovement : MonoBehaviour {
 	}
 
 	void OnJump(InputAction.CallbackContext context) {
-		Debug.Log("Jump!");
+		if (characterController.isGrounded)
+			verticalVel.y = jumpForce;
 	}
 
 	void Update() {
-		if (moveInput == Vector2.zero) return;
+		Vector3 camForward = camTransform.forward;
+		camForward.y = 0;
+		camForward.Normalize();
 		
-		moveDirection = camTransform.forward * moveInput.y + camTransform.right * moveInput.x;
-		moveDirection.y = 0;
+		moveDirection = camForward * moveInput.y + camTransform.right * moveInput.x;
 	}
 
 	void FixedUpdate() {
-		characterController.Move(moveDirection * maxSpeed * Time.fixedDeltaTime);
+		verticalVel += Physics.gravity * gravityScale * Time.fixedDeltaTime;
+		Vector3 velocity = moveDirection * maxSpeed + verticalVel;
+
+		characterController.Move(velocity * Time.fixedDeltaTime);
+		
+		
+		if (characterController.isGrounded)
+			verticalVel = Vector3.zero;
 	}
 }
