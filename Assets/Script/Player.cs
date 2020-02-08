@@ -11,9 +11,4 @@ public class Player : MonoBehaviour {
 		score = Mathf.Max(score, (int)transform.position.magnitude);
 		scoreText.text = "Score: " + score;
 	}
-
-	void LateUpdate() {
-		Vector3 leftStick = Gamepad.current.rightStick.ReadValue();
-		Debug.Log(leftStick);
-	}
 }
