@@ -1,5 +1,6 @@
 ﻿using System;
 using Cinemachine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,6 +17,10 @@ public class CameraMovement : MonoBehaviour {
 	Vector2 lookInput;
 	bool lastGoingUp = false;
 
+	public TextMeshProUGUI textVelX;
+	public TextMeshProUGUI textVelY;
+	public TextMeshProUGUI textVelZ;
+
 	void Start() {
 		playerInput.actions["Look"].started += OnLook;
 		playerInput.actions["Look"].performed += OnLook;
@@ -30,6 +35,10 @@ public class CameraMovement : MonoBehaviour {
 	}
 
 	void LateUpdate() {
+		textVelX.text = "VelX: " + characterController.velocity.x;
+		textVelY.text = "VelY: " + characterController.velocity.y;
+		textVelZ.text = "VelZ: " + characterController.velocity.z;
+		
 		bool goingUp = characterController.velocity.y > upThreshold;
 
 		if (goingUp == lastGoingUp) return;
