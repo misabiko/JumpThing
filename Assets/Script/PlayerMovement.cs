@@ -1,38 +1,29 @@
-﻿using System;
-using Cinemachine;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour {
-	public CinemachineFreeLook cam;
 	public Transform camTransform;
-	public float camXSensitivity;
-	public float camYSensitivity;
-
 	public float maxSpeed;
+	public float jumpForce;
+	public float gravityScale;
 
 	CharacterController characterController;
 	Vector2 moveInput;
 	Vector3 moveDirection;
+	Vector3 verticalVel;
 	
 	void Awake() {
 		characterController = GetComponent<CharacterController>();
 
 		PlayerInput playerInput = GetComponent<PlayerInput>();
 
-		playerInput.actions["Look"].started += OnLook;
-		playerInput.actions["Look"].performed += OnLook;
-		playerInput.actions["Look"].canceled += OnLook;
-
 		playerInput.actions["Move"].started += OnMove;
 		playerInput.actions["Move"].performed += OnMove;
 		playerInput.actions["Move"].canceled += OnMove;
-	}
 
-	void OnLook(InputAction.CallbackContext context) {
-		Vector2 lookInput = context.ReadValue<Vector2>();
-		cam.m_XAxis.Value += camXSensitivity * lookInput.x;
-		cam.m_YAxis.Value += camYSensitivity * lookInput.y;
+		playerInput.actions["Jump"].started += OnJump;
+		playerInput.actions["Jump"].performed += OnJump;
+		playerInput.actions["Jump"].canceled += OnJump;
 	}
 
 	void OnMove(InputAction.CallbackContext context) {
@@ -42,17 +33,26 @@ public class PlayerMovement : MonoBehaviour {
 	}
 
 	void OnJump(InputAction.CallbackContext context) {
-		Debug.Log("Jump!");
+		if (characterController.isGrounded)
+			verticalVel.y = jumpForce;
 	}
 
 	void Update() {
-		if (moveInput != Vector2.zero) {
-			moveDirection = camTransform.forward * moveInput.y + camTransform.right * moveInput.x;
-			moveDirection.y = 0;
-		}
+		Vector3 camForward = camTransform.forward;
+		camForward.y = 0;
+		camForward.Normalize();
+		
+		moveDirection = camForward * moveInput.y + camTransform.right * moveInput.x;
 	}
 
 	void FixedUpdate() {
-		characterController.Move(moveDirection * maxSpeed * Time.fixedDeltaTime);
+		verticalVel += Physics.gravity * gravityScale * Time.fixedDeltaTime;
+		Vector3 velocity = moveDirection * maxSpeed + verticalVel;
+
+		characterController.Move(velocity * Time.fixedDeltaTime);
+		
+		
+		if (characterController.isGrounded)
+			verticalVel = Vector3.zero;
 	}
 }
