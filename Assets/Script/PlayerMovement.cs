@@ -6,6 +6,7 @@ public class PlayerMovement : MonoBehaviour {
 	public float maxSpeed;
 	public float jumpForce;
 	public float gravityScale;
+	public float turnSpeed;
 
 	CharacterController characterController;
 	Vector2 moveInput;
@@ -50,8 +51,13 @@ public class PlayerMovement : MonoBehaviour {
 		Vector3 velocity = moveDirection * maxSpeed + verticalVel;
 
 		characterController.Move(velocity * Time.fixedDeltaTime);
-		
-		
+		if (moveDirection != Vector3.zero) {
+			Quaternion goalRot = Quaternion.LookRotation(moveDirection);
+			Quaternion slerp = Quaternion.Slerp(transform.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+			
+			transform.rotation = slerp;
+		}
+
 		if (characterController.isGrounded)
 			verticalVel = Vector3.zero;
 	}
