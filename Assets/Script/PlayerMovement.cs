@@ -3,16 +3,20 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour {
-	public Transform camTransform;
-	public Animator anim;
-	public ParticleSystem smokeTrail;
-	public ParticleSystem smokePoof;
-	public float maxSpeedJog;
-	public float maxSpeedRun;
-	public float runThreshold;	//Must match animator's transition conditions
-	public float jumpForce;
-	public float gravityScale;
-	public float turnSpeed;
+	static readonly int MoveInputMagnitude = Animator.StringToHash("MoveInputMagnitude");
+	static readonly int Jump = Animator.StringToHash("Jump");
+	static readonly int AirBorn = Animator.StringToHash("AirBorn");
+	
+	[SerializeField] Transform camTransform;
+	[SerializeField] Animator anim;
+	[SerializeField] ParticleSystem smokeTrail;
+	[SerializeField] ParticleSystem smokePoof;
+	[SerializeField] float maxSpeedJog;
+	[SerializeField] float maxSpeedRun;
+	[SerializeField] float runThreshold;	//Must match animator's transition conditions
+	[SerializeField] float jumpForce;
+	[SerializeField] float gravityScale;
+	[SerializeField] float turnSpeed;
 
 	CharacterController characterController;
 	Vector2 moveInput;
@@ -20,10 +24,7 @@ public class PlayerMovement : MonoBehaviour {
 	Vector3 verticalVel;
 	bool wasGrounded;
 
-	public TextMeshProUGUI velText;
-	static readonly int MoveInputMagnitude = Animator.StringToHash("MoveInputMagnitude");
-	static readonly int Jump = Animator.StringToHash("Jump");
-	static readonly int AirBorn = Animator.StringToHash("AirBorn");
+	[SerializeField] TextMeshProUGUI velText;
 
 	void Awake() {
 		characterController = GetComponent<CharacterController>();

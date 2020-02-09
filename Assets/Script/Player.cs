@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour {
-	public TextMeshProUGUI scoreText;
-	public float deathHeight;
+	[SerializeField] TextMeshProUGUI scoreText;
+	[SerializeField] float deathHeight;
 	
 	PlayerMovement movement;
 	int score;
