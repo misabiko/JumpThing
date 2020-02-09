@@ -2,9 +2,9 @@
 using UnityEngine;
 
 public class Player : MonoBehaviour {
-	[SerializeField] TextMeshProUGUI scoreText;
-	[SerializeField] int scoreOffset;
-	[SerializeField] float deathHeight;
+	public TextMeshProUGUI scoreText;
+	public int scoreOffset;
+	public float deathHeight;
 
 	PlayerMovement movement;
 	int score;

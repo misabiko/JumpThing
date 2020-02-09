@@ -7,22 +7,24 @@ public class PlayerMovement : MonoBehaviour {
 	static readonly int Jump = Animator.StringToHash("Jump");
 	static readonly int AirBorn = Animator.StringToHash("AirBorn");
 	
-	[SerializeField] Transform camTransform;
-	[SerializeField] Animator anim;
-	[SerializeField] ParticleSystem smokeTrail;
-	[SerializeField] ParticleSystem smokePoof;
-	[SerializeField] float maxSpeedJog;
-	[SerializeField] float maxSpeedRun;
-	[SerializeField] float runThreshold;	//Must match animator's transition conditions
-	[SerializeField] float jumpForce;
-	[SerializeField] float gravityScale;
-	[SerializeField] float turnSpeed;
+	public Transform camTransform;
+	public Animator anim;
+	public ParticleSystem smokeTrail;
+	public ParticleSystem smokePoof;
+	public ParticleSystem jumpParticles;
+	public float maxSpeedJog;
+	public float maxSpeedRun;
+	public float runThreshold;	//Must match animator's transition conditions
+	public float jumpForce;
+	public float turnSpeed;
 
 	CharacterController characterController;
 	Vector2 moveInput;
 	Vector3 moveDirection;
 	Vector3 verticalVel;
 	bool wasGrounded;
+
+	public AudioSource jumpAudio;
 
 	void Awake() {
 		characterController = GetComponent<CharacterController>();
@@ -50,6 +52,8 @@ public class PlayerMovement : MonoBehaviour {
 		verticalVel.y = jumpForce;
 		anim.SetTrigger(Jump);
 		anim.SetBool(AirBorn, true);
+		jumpParticles.Play();
+		jumpAudio.Play();
 	}
 
 	void Update() {
@@ -78,17 +82,16 @@ public class PlayerMovement : MonoBehaviour {
 	}
 
 	void FixedUpdate() {
-		verticalVel += Physics.gravity * gravityScale * Time.fixedDeltaTime;
+		verticalVel += Physics.gravity;
 
-		Vector3 velocity;
+		Vector3 velocity = verticalVel;
 		if (moveDirection.sqrMagnitude <= runThreshold * runThreshold)
-			velocity = moveDirection * maxSpeedJog;
+			velocity += moveDirection * maxSpeedJog;
 		else {
 			Vector3 direction = moveDirection.normalized;
-			velocity = (moveDirection - direction * runThreshold) * maxSpeedRun + direction * runThreshold * maxSpeedJog;
+			velocity += (moveDirection - direction * runThreshold) * maxSpeedRun + direction * (runThreshold * maxSpeedJog);
 		}
-		velocity += verticalVel;
-		
+
 		characterController.Move(velocity * Time.fixedDeltaTime);
 		
 		if (moveDirection != Vector3.zero) {

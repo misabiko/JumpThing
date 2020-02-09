@@ -5,10 +5,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class CameraMovement : MonoBehaviour {
-	[SerializeField] CinemachineFreeLook cam;
-	[SerializeField] PlayerInput playerInput;
-	[SerializeField] float camXSensitivity;
-	[SerializeField] float camYSensitivity;
+	public CinemachineFreeLook cam;
+	public PlayerInput playerInput;
+	public float camXSensitivity;
+	public float camYSensitivity;
 
 	Vector2 lookInput;
 
