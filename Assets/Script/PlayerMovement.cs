@@ -84,6 +84,14 @@ public class PlayerMovement : MonoBehaviour {
 		if (characterController.isGrounded) {
 			verticalVel = Vector3.zero;
 			anim.SetBool(AirBorn, false);
-		}
+		}else
+			anim.SetBool(AirBorn, true);
+	}
+
+	public void Teleport(Vector3 pos, Quaternion rot) {
+		characterController.enabled = false;
+		verticalVel = Vector3.zero;
+		transform.SetPositionAndRotation(pos, rot);
+		characterController.enabled = true;
 	}
 }
