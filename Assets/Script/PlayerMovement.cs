@@ -4,18 +4,21 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour {
 	public Transform camTransform;
+	public Animator anim;
+	public ParticleSystem smokeTrail;
+	public ParticleSystem smokePoof;
 	public float maxSpeedJog;
 	public float maxSpeedRun;
 	public float runThreshold;	//Must match animator's transition conditions
 	public float jumpForce;
 	public float gravityScale;
 	public float turnSpeed;
-	public Animator anim;
 
 	CharacterController characterController;
 	Vector2 moveInput;
 	Vector3 moveDirection;
 	Vector3 verticalVel;
+	bool wasGrounded;
 
 	public TextMeshProUGUI velText;
 	static readonly int MoveInputMagnitude = Animator.StringToHash("MoveInputMagnitude");
@@ -24,7 +27,7 @@ public class PlayerMovement : MonoBehaviour {
 
 	void Awake() {
 		characterController = GetComponent<CharacterController>();
-
+		
 		PlayerInput playerInput = GetComponent<PlayerInput>();
 
 		playerInput.actions["Move"].started += OnMove;
@@ -56,7 +59,23 @@ public class PlayerMovement : MonoBehaviour {
 		camForward.Normalize();
 		
 		moveDirection = camForward * moveInput.y + camTransform.right * moveInput.x;
-		anim.SetFloat(MoveInputMagnitude, moveDirection.magnitude);
+		
+		float stickStrength = moveDirection.magnitude;
+		anim.SetFloat(MoveInputMagnitude, stickStrength);
+		CheckSmokeParticles(stickStrength);
+	}
+
+	void CheckSmokeParticles(float stickStrength) {
+		if (!characterController.isGrounded) {
+			if (smokeTrail.isPlaying)	//TODO PROFILEME might not be necessary
+				smokeTrail.Stop();
+			return;
+		}
+
+		if (smokeTrail.isPlaying && stickStrength <= runThreshold)
+			smokeTrail.Stop();
+		else if (!smokeTrail.isPlaying && stickStrength > runThreshold)
+			smokeTrail.Play();
 	}
 
 	void FixedUpdate() {
@@ -81,11 +100,19 @@ public class PlayerMovement : MonoBehaviour {
 			transform.rotation = slerp;
 		}
 
-		if (characterController.isGrounded) {
+		UpdateGrounding(characterController.isGrounded);
+	}
+
+	void UpdateGrounding(bool isGrounded) {
+		if (isGrounded)
 			verticalVel = Vector3.zero;
-			anim.SetBool(AirBorn, false);
-		}else
-			anim.SetBool(AirBorn, true);
+		
+		anim.SetBool(AirBorn, !isGrounded);
+
+		if (isGrounded != wasGrounded)
+			smokePoof.Play();
+		
+		wasGrounded = isGrounded;
 	}
 
 	public void Teleport(Vector3 pos, Quaternion rot) {
