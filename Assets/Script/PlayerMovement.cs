@@ -24,8 +24,6 @@ public class PlayerMovement : MonoBehaviour {
 	Vector3 verticalVel;
 	bool wasGrounded;
 
-	[SerializeField] TextMeshProUGUI velText;
-
 	void Awake() {
 		characterController = GetComponent<CharacterController>();
 		
@@ -89,7 +87,6 @@ public class PlayerMovement : MonoBehaviour {
 			Vector3 direction = moveDirection.normalized;
 			velocity = (moveDirection - direction * runThreshold) * maxSpeedRun + direction * runThreshold * maxSpeedJog;
 		}
-		velText.text = "Input: " + (Mathf.Round(moveDirection.magnitude * 100f) / 100f) + "\nVel: " + (Mathf.Round(velocity.magnitude * 100f) / 100f);
 		velocity += verticalVel;
 		
 		characterController.Move(velocity * Time.fixedDeltaTime);

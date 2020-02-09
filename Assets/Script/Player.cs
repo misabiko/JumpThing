@@ -1,12 +1,11 @@
-﻿using System;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour {
 	[SerializeField] TextMeshProUGUI scoreText;
+	[SerializeField] int scoreOffset;
 	[SerializeField] float deathHeight;
-	
+
 	PlayerMovement movement;
 	int score;
 	Vector3 spawnPos;
@@ -32,7 +31,10 @@ public class Player : MonoBehaviour {
 	}
 
 	void UpdateScore() {
-		score = Mathf.Max(score, (int)transform.position.magnitude);
+		Vector3 distance = transform.position;
+		distance.y = 0;
+		
+		score = Mathf.Max(score, (int)distance.magnitude - scoreOffset);
 		scoreText.text = "Score: " + score;
 	}
 }
