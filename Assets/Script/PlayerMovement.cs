@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,23 +7,32 @@ public class PlayerMovement : MonoBehaviour {
 	static readonly int MoveInputMagnitude = Animator.StringToHash("MoveInputMagnitude");
 	static readonly int Jump = Animator.StringToHash("Jump");
 	static readonly int AirBorn = Animator.StringToHash("AirBorn");
+	static readonly int MoveInputWithWarmUp = Animator.StringToHash("MoveInput+WarmUpBoost");
 	
 	public Transform camTransform;
 	public Animator anim;
 	public ParticleSystem smokeTrail;
 	public ParticleSystem smokePoof;
 	public ParticleSystem jumpParticles;
+	public SFXPlayer sfxPlayer;
+	
 	public float maxSpeedJog;
 	public float maxSpeedRun;
 	public float runThreshold;	//Must match animator's transition conditions
 	public float jumpForce;
 	public float turnSpeed;
+	
+	public float warmUpDelay;
+	public float warmUpSpeed;
+	public float maxWarmUp;
 
 	CharacterController characterController;
 	Vector2 moveInput;
 	Vector3 moveDirection;
 	Vector3 verticalVel;
 	bool wasGrounded;
+	Coroutine runWarmUp;
+	float warmUpBoost;
 
 	public AudioSource jumpAudio;
 
@@ -65,6 +75,7 @@ public class PlayerMovement : MonoBehaviour {
 		
 		float stickStrength = moveDirection.magnitude;
 		anim.SetFloat(MoveInputMagnitude, stickStrength);
+		anim.SetFloat(MoveInputWithWarmUp, stickStrength + warmUpBoost);
 		CheckSmokeParticles(stickStrength);
 	}
 
@@ -85,11 +96,17 @@ public class PlayerMovement : MonoBehaviour {
 		verticalVel += Physics.gravity;
 
 		Vector3 velocity = verticalVel;
-		if (moveDirection.sqrMagnitude <= runThreshold * runThreshold)
+		if (moveDirection.sqrMagnitude <= runThreshold * runThreshold) {
 			velocity += moveDirection * maxSpeedJog;
-		else {
+			
+			if (runWarmUp != null)
+				StopWarmUp();
+		}else {
 			Vector3 direction = moveDirection.normalized;
-			velocity += (moveDirection - direction * runThreshold) * maxSpeedRun + direction * (runThreshold * maxSpeedJog);
+			velocity += (moveDirection - direction * runThreshold) * (maxSpeedRun + warmUpBoost) + direction * (runThreshold * maxSpeedJog);
+
+			if (runWarmUp == null)
+				runWarmUp = StartCoroutine(WarmUpRun());
 		}
 
 		characterController.Move(velocity * Time.fixedDeltaTime);
@@ -110,9 +127,11 @@ public class PlayerMovement : MonoBehaviour {
 		
 		anim.SetBool(AirBorn, !isGrounded);
 
-		if (isGrounded != wasGrounded)
+		if (isGrounded != wasGrounded) {
 			smokePoof.Play();
-		
+			sfxPlayer.Land();
+		}
+
 		wasGrounded = isGrounded;
 	}
 
@@ -121,5 +140,26 @@ public class PlayerMovement : MonoBehaviour {
 		verticalVel = Vector3.zero;
 		transform.SetPositionAndRotation(pos, rot);
 		characterController.enabled = true;
+	}
+
+	IEnumerator WarmUpRun() {
+		yield return new WaitForSeconds(warmUpDelay);
+
+		while (true) {
+			warmUpBoost += warmUpSpeed;
+			
+			if (warmUpBoost >= maxWarmUp) {
+				warmUpBoost = maxWarmUp;
+				break;
+			}
+			
+			yield return null;
+		}
+	}
+
+	void StopWarmUp() {
+		StopCoroutine(runWarmUp);
+		runWarmUp = null;
+		warmUpBoost = 0f;
 	}
 }
