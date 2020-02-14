@@ -2,6 +2,7 @@
 
 public class RayTracingThingy : MonoBehaviour {
 	public ComputeShader computeShader;
+	public Light directionalLight;
 	
 	RenderTexture target;
 	

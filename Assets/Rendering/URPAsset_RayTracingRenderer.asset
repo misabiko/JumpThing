@@ -48,6 +48,4 @@ MonoBehaviour:
   m_Name: RayTracing
   m_EditorClassIdentifier: 
   settings:
-    rayTraceMaterial: {fileID: 2100000, guid: c0f814fd259f6184891df31685cc2f14, type: 2}
-    rayTraceMaterialPassIndex: 0
-    computeShader: {fileID: 7200000, guid: 6c370dce9ed2c2249a1ada3536fc728a, type: 3}
+    computeShader: {fileID: 7200000, guid: 4898c6232dd6d4a42b3e3a0b3175c122, type: 3}

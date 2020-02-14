@@ -1,5 +1,5 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -63,10 +63,13 @@ public class RayTracingRenderPassFeature : ScriptableRendererFeature {
 		}
 
 		void SetShaderParameters(CommandBuffer cmd, Camera camera) {
-			cmd.SetComputeMatrixParam(computeShader, "_CameraToWorld", camera.cameraToWorldMatrix);
-			cmd.SetComputeMatrixParam(computeShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
-			cmd.SetComputeVectorParam(computeShader, "_PixelOffset", new Vector2(Random.value, Random.value));
-			cmd.SetComputeFloatParam(computeShader, "_Time", (float)EditorApplication.timeSinceStartup);
+			//cmd.SetComputeMatrixParam(computeShader, "_CameraToWorld", camera.cameraToWorldMatrix);
+			//cmd.SetComputeMatrixParam(computeShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
+			//Light directionalLight = camera.GetComponent<RayTracingThingy>().directionalLight;
+			//Vector3 light = directionalLight.transform.forward;
+			//cmd.SetComputeVectorParam(computeShader, "_DirectionalLight", new Vector4(light.x, light.y, light.z, directionalLight.intensity));
+
+			cmd.SetComputeFloatParam(computeShader, "_Time", Time.time);
 		}
 	}
 

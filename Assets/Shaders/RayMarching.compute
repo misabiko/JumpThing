@@ -1,14 +1,87 @@
-﻿// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+﻿#pragma kernel CSMain
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
+#define MAX_STEPS 100
+#define SURFACE_DIST .01
+#define MAX_DIST 100.
+
 RWTexture2D<float4> Result;
+float _Time;
+
+struct Ray {
+    float3 origin;
+    float3 direction;
+};
+
+Ray CreateRay(float3 origin, float3 direction) {
+    Ray ray;
+    ray.origin = origin;
+    ray.direction = direction;
+    return ray;
+}
+
+float GetDist(float3 p) {
+    float4 sphere = float4(0.0f, 1.0f, 6.0f, 1.0f);
+    float sphereDistance = length(p - sphere.xyz) - sphere.w;
+    float planeDistance = p.y;
+    float distance = min(sphereDistance, planeDistance);
+    
+    return distance;
+}
+
+float RayMarch(Ray ray) {
+    float totalDistance = 0.0f;
+    for (int i = 0; i < MAX_STEPS; i++) {
+        float3 p = ray.origin + totalDistance * ray.direction;
+        float newDist = GetDist(p);
+        totalDistance += newDist;
+        
+        if (newDist < SURFACE_DIST || totalDistance > MAX_DIST)
+            break;
+    } 
+    
+    return totalDistance;
+}
+
+float3 GetNormal(float3 p) {
+    float d = GetDist(p);
+    float2 e = float2(.01, 0);
+    
+    float3 n = float3(
+        d - GetDist(p - e.xyy),
+        d - GetDist(p - e.yxy),
+        d - GetDist(p - e.yyx)
+    );
+    
+    return normalize(n);
+}
+
+float GetLight(float3 p) {
+    float3 lightPos = float3(0, 5, 6);
+    lightPos.xy += float2(sin(_Time), cos(_Time));
+    float3 l = normalize(lightPos - p);
+    float3 n = GetNormal(p);
+    
+    float dif = clamp(dot(n, l), 0, 1);
+    float d = RayMarch(CreateRay(p + n * (SURFACE_DIST + 0.01f), l));
+    if (d < length(lightPos - p)) dif *= 0.1f;
+    
+    return dif;
+}
 
 [numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
-{
-    // TODO: insert actual code here!
+void CSMain (uint3 id : SV_DispatchThreadID) {
+    uint width, height;
+    Result.GetDimensions(width, height);
+    
+    //float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
+    float2 uv = (id.xy - float2(0.5f, 0.5f) * float2(width, height)) / float(height);
+    
+    Ray ray = CreateRay(float3(0, 1, 0), normalize(float3(uv.xy, 1)));
+    float d = RayMarch(ray);
+    
+    float3 p = ray.origin + ray.direction * d;
+    float dif = GetLight(p);
+    float3 col = float3(dif, dif, dif);
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+    Result[id.xy] = float4(col, 1.0);
 }

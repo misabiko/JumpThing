@@ -8,6 +8,7 @@ float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 float2 _PixelOffset;
 float _Time;
+float4 _DirectionalLight;
 
 struct Ray {
     float3 origin;
@@ -38,6 +39,8 @@ struct RayHit {
     float3 position;
     float distance;
     float3 normal;
+    float3 albedo;
+    float3 specular;
 };
 
 RayHit CreateRayHit() {
@@ -45,6 +48,8 @@ RayHit CreateRayHit() {
     hit.position = float3(0.0f, 0.0f, 0.0f);
     hit.distance = 1.#INF;
     hit.normal = float3(0.0f, 0.0f, 0.0f);
+    hit.albedo = float3(0.0f, 0.0f, 0.0f);
+    hit.specular = float3(0.0f, 0.0f, 0.0f);
     return hit;
 }
 
@@ -89,12 +94,13 @@ RayHit Trace(Ray ray) {
 float3 Shade(inout Ray ray, RayHit hit) {
     if(hit.distance < 1.#INF) {
         float3 specular = float3(0.6f, 0.6f, 0.6f);
+        float3 albedo = float3(0.8f, 0.8f, 0.8f);
         
         ray.origin = hit.position + hit.normal * 0.001f;
         ray.direction = reflect(ray.direction, hit.normal);
         ray.energy *= specular;
         
-        return float3(0.0f, 0.0f, 0.0f);
+        return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * albedo;
     }else {
         ray.energy = 0.0f;
         return float3(ray.direction * 0.5f + 0.5f);
@@ -106,7 +112,7 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     uint width, height;
     Result.GetDimensions(width, height);
     
-    float2 uv = float2((id.xy + _PixelOffset) / float2(width, height) * 2.0f - 1.0f);
+    float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
     
     Ray ray = CreateCameraRay(uv);
 
