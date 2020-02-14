@@ -468,6 +468,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 6c370dce9ed2c2249a1ada3536fc728a, type: 3}
+  directionalLight: {fileID: 1580723505}
 --- !u!114 &1332819687
 MonoBehaviour:
   m_ObjectHideFlags: 0
