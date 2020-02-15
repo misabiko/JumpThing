@@ -7,6 +7,14 @@
 RWTexture2D<float4> Result;
 float _Time;
 
+float4x4 _CameraToWorld;
+float4x4 _CameraInverseProjection;
+
+struct Sphere {
+    float3 position;
+    float radius;
+};
+
 struct Ray {
     float3 origin;
     float3 direction;
@@ -19,13 +27,30 @@ Ray CreateRay(float3 origin, float3 direction) {
     return ray;
 }
 
-float GetDist(float3 p) {
-    float4 sphere = float4(0.0f, 1.0f, 6.0f, 1.0f);
-    float sphereDistance = length(p - sphere.xyz) - sphere.w;
-    float planeDistance = p.y;
-    float distance = min(sphereDistance, planeDistance);
+Ray CreateCameraRay(float2 uv) {
+    float3 origin = mul(_CameraToWorld, float4(0, 0, 0, 1)).xyz;
     
-    return distance;
+    float3 direction = mul(_CameraInverseProjection, float4(uv, 0, 1)).xyz;
+    direction = mul(_CameraToWorld, float4(direction, 0)).xyz;
+    direction = normalize(direction);
+    
+    return CreateRay(origin, direction);
+}
+
+float GetSphereDist(float3 p, Sphere sphere) {
+    return length(p - sphere.position) - sphere.radius;
+}
+
+float GetDist(float3 p) {
+    Sphere sphere;
+    sphere.position = float3(0.0f, 1.0f, 6.0f);
+    sphere.radius = 1.0f;
+    
+    float sphereDistance = GetSphereDist(p, sphere); 
+    //float planeDistance = p.y;
+    //float distance = min(sphereDistance, planeDistance);
+    
+    return sphereDistance;
 }
 
 float RayMarch(Ray ray) {
@@ -73,15 +98,17 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     uint width, height;
     Result.GetDimensions(width, height);
     
-    //float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
-    float2 uv = (id.xy - float2(0.5f, 0.5f) * float2(width, height)) / float(height);
+    float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
+    //float2 uv = (id.xy - float2(0.5f, 0.5f) * float2(width, height)) / float(height);
     
-    Ray ray = CreateRay(float3(0, 1, 0), normalize(float3(uv.xy, 1)));
+    Ray ray = CreateCameraRay(uv);
     float d = RayMarch(ray);
-    
-    float3 p = ray.origin + ray.direction * d;
-    float dif = GetLight(p);
-    float3 col = float3(dif, dif, dif);
 
-    Result[id.xy] = float4(col, 1.0);
+    if (d < 100.0f) {    
+        float3 p = ray.origin + ray.direction * d;
+        float dif = GetLight(p);
+        float3 col = float3(dif, dif, dif);
+    
+        Result[id.xy] = float4(col, 1.0);
+    }
 }

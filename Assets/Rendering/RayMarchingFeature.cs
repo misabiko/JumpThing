@@ -5,8 +5,8 @@ using UnityEngine.Rendering.Universal;
 
 
 //https://github.com/Unity-Technologies/UniversalRenderingExamples/blob/master/Assets/Scripts/Runtime/RenderPasses/BlitPass.cs
-public class RayTracingRenderPassFeature : ScriptableRendererFeature {
-	class RayTracingPass : ScriptableRenderPass {
+public class RayMarchingFeature : ScriptableRendererFeature {
+	class RayMarchingPass : ScriptableRenderPass {
 		readonly string commandBufferName;
 
 		RenderTargetIdentifier source;
@@ -15,7 +15,12 @@ public class RayTracingRenderPassFeature : ScriptableRendererFeature {
 		RenderTexture target;
 		RenderTargetIdentifier targetIdentifier;
 
-		public RayTracingPass(ComputeShader computeShader, string commandBufferName) {
+		struct MarchedSphere {
+			Vector3 position;
+			float radius;
+		}
+
+		public RayMarchingPass(ComputeShader computeShader, string commandBufferName) {
 			this.computeShader = computeShader;
 			this.commandBufferName = commandBufferName;
 		}
@@ -24,12 +29,10 @@ public class RayTracingRenderPassFeature : ScriptableRendererFeature {
 			InitRenderTexture();
 			
 			targetIdentifier = new RenderTargetIdentifier(target);
-			cmd.SetGlobalTexture("_RayTracingTexture", targetIdentifier);
+			cmd.SetGlobalTexture("_RayMarchingTexture", targetIdentifier);
 		}
 		
-		public void Setup(RenderTargetIdentifier source) {
-			this.source = source;
-		}
+		public void Setup(RenderTargetIdentifier source) => this.source = source;
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
 			CommandBuffer cmd = CommandBufferPool.Get(commandBufferName);
@@ -63,34 +66,30 @@ public class RayTracingRenderPassFeature : ScriptableRendererFeature {
 		}
 
 		void SetShaderParameters(CommandBuffer cmd, Camera camera) {
-			//cmd.SetComputeMatrixParam(computeShader, "_CameraToWorld", camera.cameraToWorldMatrix);
-			//cmd.SetComputeMatrixParam(computeShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
-			//Light directionalLight = camera.GetComponent<RayTracingThingy>().directionalLight;
-			//Vector3 light = directionalLight.transform.forward;
-			//cmd.SetComputeVectorParam(computeShader, "_DirectionalLight", new Vector4(light.x, light.y, light.z, directionalLight.intensity));
-
+			cmd.SetComputeMatrixParam(computeShader, "_CameraToWorld", camera.cameraToWorldMatrix);
+			cmd.SetComputeMatrixParam(computeShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
 			cmd.SetComputeFloatParam(computeShader, "_Time", Time.time);
 		}
 	}
 
 	[System.Serializable]
-	public struct RayTracingSettings {
+	public struct RayMarchingSettings {
 		public ComputeShader computeShader;
 	}
 
-	public RayTracingSettings settings;
+	public RayMarchingSettings settings;
 	
-	RayTracingPass rayTracingPass;
+	RayMarchingPass rayMarchingPass;
 
 	public override void Create() =>
-		rayTracingPass = new RayTracingPass(settings.computeShader, name) {
+		rayMarchingPass = new RayMarchingPass(settings.computeShader, name) {
 			renderPassEvent = RenderPassEvent.AfterRendering
 		};
 
 	// Here you can inject one or multiple render passes in the renderer.
 	// This method is called when setting up the renderer once per-camera.
 	public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData) {
-		rayTracingPass.Setup(renderer.cameraColorTarget);
-		renderer.EnqueuePass(rayTracingPass);
+		rayMarchingPass.Setup(renderer.cameraColorTarget);
+		renderer.EnqueuePass(rayMarchingPass);
 	}
 }

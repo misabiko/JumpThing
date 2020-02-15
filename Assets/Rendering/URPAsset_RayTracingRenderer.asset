@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: URPAsset_RayTracingRenderer
   m_EditorClassIdentifier: 
   m_RendererFeatures:
-  - {fileID: 4815974524981438116}
+  - {fileID: 2636348973398999673}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
@@ -35,6 +35,34 @@ MonoBehaviour:
     passOperation: 0
     failOperation: 0
     zFailOperation: 0
+--- !u!114 &2636348973398999673
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d57f5c65aef47334abf45d7694361363, type: 3}
+  m_Name: Ray Marching
+  m_EditorClassIdentifier: 
+  settings:
+    computeShader: {fileID: 7200000, guid: 4898c6232dd6d4a42b3e3a0b3175c122, type: 3}
+--- !u!114 &4407718507234727750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d57f5c65aef47334abf45d7694361363, type: 3}
+  m_Name: Ray Marching
+  m_EditorClassIdentifier: 
+  settings:
+    computeShader: {fileID: 7200000, guid: 4898c6232dd6d4a42b3e3a0b3175c122, type: 3}
 --- !u!114 &4815974524981438116
 MonoBehaviour:
   m_ObjectHideFlags: 0
