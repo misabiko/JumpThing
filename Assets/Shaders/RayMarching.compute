@@ -15,8 +15,6 @@ struct Sphere {
 };
 
 StructuredBuffer<Sphere> _Spheres;
-float3 _SomeSphere;
-float _SomeSphereRadius;
 
 struct Ray {
     float3 origin;
@@ -45,14 +43,17 @@ float GetSphereDist(float3 p, Sphere sphere) {
 }
 
 float GetDist(float3 p) {
-    Sphere sphere;
-    sphere.position = _SomeSphere;
-    sphere.radius = _SomeSphereRadius;
-    float sphereDistance = GetSphereDist(p, sphere); 
+    uint numSpheres, stride;
+    _Spheres.GetDimensions(numSpheres, stride);
+    float distance = MAX_DIST;
+    
+    for (uint i = 0; i < numSpheres; i++)
+        distance = min(distance, GetSphereDist(p, _Spheres[i]));
+         
     //float planeDistance = p.y;
     //float distance = min(sphereDistance, planeDistance);
     
-    return sphereDistance;
+    return distance;
 }
 
 float RayMarch(Ray ray) {
@@ -101,7 +102,6 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     Result.GetDimensions(width, height);
     
     float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
-    //float2 uv = (id.xy - float2(0.5f, 0.5f) * float2(width, height)) / float(height);
     
     Ray ray = CreateCameraRay(uv);
     float d = RayMarch(ray);

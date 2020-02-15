@@ -3,8 +3,6 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-
-//https://github.com/Unity-Technologies/UniversalRenderingExamples/blob/master/Assets/Scripts/Runtime/RenderPasses/BlitPass.cs
 public class RayMarchingFeature : ScriptableRendererFeature {
 	class RayMarchingPass : ScriptableRenderPass {
 		readonly string commandBufferName;
@@ -14,9 +12,9 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		readonly ComputeShader computeShader;
 		RenderTexture target;
 		RenderTargetIdentifier targetIdentifier;
-		ComputeBuffer sphereBuffer;
+		public ComputeBuffer sphereBuffer;
 
-		GameObject rayMarchObject;
+		Transform sphereParent;
 
 		struct Sphere {
 			public Vector3 position;
@@ -28,12 +26,8 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		public RayMarchingPass(ComputeShader computeShader, string commandBufferName, LayerMask layerMask) {
 			this.computeShader = computeShader;
 			this.commandBufferName = commandBufferName;
-			
-			rayMarchObject = GameObject.Find("Sphere");
-			spheres.Add(new Sphere() {
-				position = rayMarchObject.transform.position,
-				radius = Mathf.Max(rayMarchObject.transform.localScale.x, rayMarchObject.transform.localScale.y, rayMarchObject.transform.localScale.z)
-			});
+
+			sphereParent = GameObject.Find("Spheres").transform;
 		}
 
 		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
@@ -65,10 +59,6 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			CommandBufferPool.Release(cmd);
 		}
 
-		public override void FrameCleanup(CommandBuffer cmd) {
-			sphereBuffer.Dispose();
-		}
-
 		void InitRenderTexture() {
 			if (target == null || target.width != Screen.width || target.height != Screen.height) {
 				if (target != null)
@@ -85,15 +75,23 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			cmd.SetComputeMatrixParam(computeShader, "_CameraToWorld", camera.cameraToWorldMatrix);
 			cmd.SetComputeMatrixParam(computeShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
 			cmd.SetComputeFloatParam(computeShader, "_Time", Time.time);
-			
+
 			//float3 + float = 4, 4 * 4 byte = 16 as stride
-			sphereBuffer = new ComputeBuffer(spheres.Count, 16);
+			spheres.Clear();
+
+			foreach (Transform sphere in sphereParent)
+				spheres.Add(new Sphere() {
+					position = sphere.position,
+					radius = Mathf.Max(sphere.localScale.x, sphere.localScale.y, sphere.localScale.z) / 2f
+				});
+
+			sphereBuffer?.Release();
+			sphereBuffer = new ComputeBuffer(sphereParent.childCount, 16);
 			sphereBuffer.SetData(spheres);
 			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
-			
-			cmd.SetComputeVectorParam(computeShader, "_SomeSphere", rayMarchObject.transform.position);
-			cmd.SetComputeFloatParam(computeShader, "_SomeSphereRadius", Mathf.Max(rayMarchObject.transform.localScale.x, rayMarchObject.transform.localScale.y, rayMarchObject.transform.localScale.z) / 2f);
 		}
+
+		void OnDestroy() => sphereBuffer?.Release();
 	}
 
 	[System.Serializable]
@@ -106,10 +104,11 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 
 	RayMarchingPass rayMarchingPass;
 
-	public override void Create() =>
+	public override void Create() {
 		rayMarchingPass = new RayMarchingPass(settings.computeShader, name, settings.layerMask) {
 			renderPassEvent = RenderPassEvent.AfterRendering
 		};
+	}
 
 	// Here you can inject one or multiple render passes in the renderer.
 	// This method is called when setting up the renderer once per-camera.
@@ -117,4 +116,6 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		rayMarchingPass.Setup(renderer.cameraColorTarget);
 		renderer.EnqueuePass(rayMarchingPass);
 	}
+
+	void OnDestroy() => rayMarchingPass.sphereBuffer.Release();
 }
