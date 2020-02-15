@@ -24,10 +24,10 @@ MonoBehaviour:
     fallbackErrorPS: {fileID: 4800000, guid: e6e9a19c3678ded42a3bc431ebef7dbd, type: 3}
   m_OpaqueLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 311
   m_TransparentLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 311
   m_DefaultStencilState:
     overrideStencilState: 0
     stencilReference: 0
@@ -49,6 +49,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings:
     computeShader: {fileID: 7200000, guid: 4898c6232dd6d4a42b3e3a0b3175c122, type: 3}
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 512
 --- !u!114 &4407718507234727750
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63,6 +66,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings:
     computeShader: {fileID: 7200000, guid: 4898c6232dd6d4a42b3e3a0b3175c122, type: 3}
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 0
 --- !u!114 &4815974524981438116
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77,3 +83,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings:
     computeShader: {fileID: 7200000, guid: 4898c6232dd6d4a42b3e3a0b3175c122, type: 3}
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 0

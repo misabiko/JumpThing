@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -14,45 +16,61 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		readonly ComputeShader computeShader;
 		RenderTexture target;
 		RenderTargetIdentifier targetIdentifier;
+		ComputeBuffer sphereBuffer;
 
-		struct MarchedSphere {
-			Vector3 position;
-			float radius;
+		GameObject rayMarchObject;
+
+		struct Sphere {
+			public Vector3 position;
+			public float radius;
 		}
 
-		public RayMarchingPass(ComputeShader computeShader, string commandBufferName) {
+		List<Sphere> spheres = new List<Sphere>();
+
+		public RayMarchingPass(ComputeShader computeShader, string commandBufferName, LayerMask layerMask) {
 			this.computeShader = computeShader;
 			this.commandBufferName = commandBufferName;
+			
+			rayMarchObject = GameObject.Find("Sphere");
+			spheres.Add(new Sphere() {
+				position = rayMarchObject.transform.position,
+				radius = Mathf.Max(rayMarchObject.transform.localScale.x, rayMarchObject.transform.localScale.y, rayMarchObject.transform.localScale.z)
+			});
 		}
 
 		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
 			InitRenderTexture();
-			
+
 			targetIdentifier = new RenderTargetIdentifier(target);
 			cmd.SetGlobalTexture("_RayMarchingTexture", targetIdentifier);
 		}
-		
+
 		public void Setup(RenderTargetIdentifier source) => this.source = source;
 
 		public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
 			CommandBuffer cmd = CommandBufferPool.Get(commandBufferName);
-			
+
+			//Copy camera's texture to target
+			cmd.Blit(source, targetIdentifier);
+
+			//Passing target to the compute shader and drawing on it
 			SetShaderParameters(cmd, renderingData.cameraData.camera);
-			
-			cmd.ClearRenderTarget(false, true, Color.clear);
-			cmd.SetComputeTextureParam(computeShader, 0, "Result", target);
+			cmd.SetComputeTextureParam(computeShader, 0, "Result", targetIdentifier);
 			int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
 			int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
 			cmd.DispatchCompute(computeShader, 0, threadGroupsX, threadGroupsY, 1);
 
+			//Then copying target back to camera's texture
 			cmd.Blit(targetIdentifier, source);
 
 			context.ExecuteCommandBuffer(cmd);
 			CommandBufferPool.Release(cmd);
 		}
 
-		public override void FrameCleanup(CommandBuffer cmd) {}
-		
+		public override void FrameCleanup(CommandBuffer cmd) {
+			sphereBuffer.Dispose();
+		}
+
 		void InitRenderTexture() {
 			if (target == null || target.width != Screen.width || target.height != Screen.height) {
 				if (target != null)
@@ -69,20 +87,27 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			cmd.SetComputeMatrixParam(computeShader, "_CameraToWorld", camera.cameraToWorldMatrix);
 			cmd.SetComputeMatrixParam(computeShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
 			cmd.SetComputeFloatParam(computeShader, "_Time", Time.time);
+			
+			//float3 + float = 4, 4 * 4 byte = 16 as stride
+			sphereBuffer = new ComputeBuffer(spheres.Count, 16);
+			
+			sphereBuffer.SetData(spheres);
+			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
 		}
 	}
 
 	[System.Serializable]
 	public struct RayMarchingSettings {
 		public ComputeShader computeShader;
+		public LayerMask layerMask;
 	}
 
 	public RayMarchingSettings settings;
-	
+
 	RayMarchingPass rayMarchingPass;
 
 	public override void Create() =>
-		rayMarchingPass = new RayMarchingPass(settings.computeShader, name) {
+		rayMarchingPass = new RayMarchingPass(settings.computeShader, name, settings.layerMask) {
 			renderPassEvent = RenderPassEvent.AfterRendering
 		};
 
