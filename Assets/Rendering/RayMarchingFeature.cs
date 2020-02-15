@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -90,9 +88,11 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			
 			//float3 + float = 4, 4 * 4 byte = 16 as stride
 			sphereBuffer = new ComputeBuffer(spheres.Count, 16);
-			
 			sphereBuffer.SetData(spheres);
 			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
+			
+			cmd.SetComputeVectorParam(computeShader, "_SomeSphere", rayMarchObject.transform.position);
+			cmd.SetComputeFloatParam(computeShader, "_SomeSphereRadius", Mathf.Max(rayMarchObject.transform.localScale.x, rayMarchObject.transform.localScale.y, rayMarchObject.transform.localScale.z) / 2f);
 		}
 	}
 

@@ -15,6 +15,9 @@ struct Sphere {
 };
 
 StructuredBuffer<Sphere> _Spheres;
+float3 _SomeSphere;
+float _SomeSphereRadius;
+
 struct Ray {
     float3 origin;
     float3 direction;
@@ -42,7 +45,10 @@ float GetSphereDist(float3 p, Sphere sphere) {
 }
 
 float GetDist(float3 p) {
-    float sphereDistance = GetSphereDist(p, _Spheres[0]); 
+    Sphere sphere;
+    sphere.position = _SomeSphere;
+    sphere.radius = _SomeSphereRadius;
+    float sphereDistance = GetSphereDist(p, sphere); 
     //float planeDistance = p.y;
     //float distance = min(sphereDistance, planeDistance);
     
@@ -107,7 +113,4 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     
         Result[id.xy] = float4(col, 1.0);
     }
-    
-    //trying to get any data in any buffer
-    Result[id.xy] = float4(_Spheres[0].position.xyz, 1);
 }
