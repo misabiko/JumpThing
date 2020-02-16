@@ -99,6 +99,8 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			sphereBuffer = new ComputeBuffer(sphereParent.childCount, 16);
 			sphereBuffer.SetData(spheres);
 			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
+
+			cmd.SetComputeFloatParam(computeShader, "_Smoother", sphereParent.GetComponent<RayMarchingController>().smoother);
 		}
 
 		void BuildLightBuffer(CommandBuffer cmd, NativeArray<VisibleLight> visibleLights) {

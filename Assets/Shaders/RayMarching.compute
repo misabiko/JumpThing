@@ -8,6 +8,7 @@ RWTexture2D<float4> Result;
 float _Time;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
+float _Smoother;
 
 StructuredBuffer<float3> _DirectionalLights;
 
@@ -44,16 +45,18 @@ float GetSphereDist(float3 p, Sphere sphere) {
     return length(p - sphere.position) - sphere.radius;
 }
 
+float SmoothMin(float dstA, float dstB, float k) {
+    float h = max(k - abs(dstA - dstB), 0) / k;
+    return min(dstA, dstB) - h*h*h*h * k * 1 / 8.0f;
+}
+
 float GetDist(float3 p) {
     uint numSpheres, stride;
     _Spheres.GetDimensions(numSpheres, stride);
     float distance = MAX_DIST;
     
     for (uint i = 0; i < numSpheres; i++)
-        distance = min(distance, GetSphereDist(p, _Spheres[i]));
-         
-    //float planeDistance = p.y;
-    //float distance = min(sphereDistance, planeDistance);
+        distance = SmoothMin(distance, GetSphereDist(p, _Spheres[i]), _Smoother);
     
     return distance;
 }
