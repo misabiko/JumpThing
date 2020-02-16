@@ -19,6 +19,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		public ComputeBuffer lightBuffer;
 
 		Transform sphereParent;
+		GameObject[] sphereGOs;
 
 		struct Sphere {
 			public Vector3 position;
@@ -32,6 +33,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			this.computeShader = computeShader;
 			this.commandBufferName = commandBufferName;
 
+			sphereGOs = GameObject.FindGameObjectsWithTag("CloudPuff");
 			sphereParent = GameObject.Find("Spheres").transform;
 		}
 
@@ -89,14 +91,14 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			//float3 + float = 4, 4 * 4 byte = 16 as stride
 			spheres.Clear();
 
-			foreach (Transform sphere in sphereParent)
+			foreach (GameObject sphere in sphereGOs)
 				spheres.Add(new Sphere() {
-					position = sphere.position,
-					radius = Mathf.Max(sphere.localScale.x, sphere.localScale.y, sphere.localScale.z) / 2f
+					position = sphere.transform.position,
+					radius = Mathf.Max(sphere.transform.localScale.x, sphere.transform.localScale.y, sphere.transform.localScale.z) / 2f
 				});
 
 			sphereBuffer?.Release();
-			sphereBuffer = new ComputeBuffer(sphereParent.childCount, 16);
+			sphereBuffer = new ComputeBuffer(sphereGOs.Length, 16);
 			sphereBuffer.SetData(spheres);
 			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
 
