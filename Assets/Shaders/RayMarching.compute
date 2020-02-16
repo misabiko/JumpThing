@@ -8,7 +8,11 @@ RWTexture2D<float4> Result;
 float _Time;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
-float _Smoother;
+float smoother;
+float3 colorA;
+float3 colorB;
+float stepDivider;
+float stepOffset;
 
 StructuredBuffer<float3> _DirectionalLights;
 
@@ -46,8 +50,11 @@ float GetSphereDist(float3 p, Sphere sphere) {
 }
 
 float SmoothMin(float dstA, float dstB, float k) {
-    float h = max(k - abs(dstA - dstB), 0) / k;
-    return min(dstA, dstB) - h*h*h*h * k * 1 / 8.0f;
+    if (smoother > 0.01f) {
+        float h = max(k - abs(dstA - dstB), 0) / k;
+        return min(dstA, dstB) - h*h*h*h * k * 1 / 8.0f;
+    }else
+        return min(dstA, dstB);
 }
 
 float GetDist(float3 p) {
@@ -56,14 +63,15 @@ float GetDist(float3 p) {
     float distance = MAX_DIST;
     
     for (uint i = 0; i < numSpheres; i++)
-        distance = SmoothMin(distance, GetSphereDist(p, _Spheres[i]), _Smoother);
+        distance = SmoothMin(distance, GetSphereDist(p, _Spheres[i]), smoother);
     
     return distance;
 }
 
-float RayMarch(Ray ray) {
+float2 RayMarch(Ray ray) {
     float totalDistance = 0.0f;
-    for (int i = 0; i < MAX_STEPS; i++) {
+    int stepCount;
+    for (stepCount = 0; stepCount < MAX_STEPS; stepCount++) {
         float3 p = ray.origin + totalDistance * ray.direction;
         float newDist = GetDist(p);
         totalDistance += newDist;
@@ -72,7 +80,7 @@ float RayMarch(Ray ray) {
             break;
     } 
     
-    return totalDistance;
+    return float2(totalDistance, stepCount);
 }
 
 float3 GetNormal(float3 p) {
@@ -89,12 +97,12 @@ float3 GetNormal(float3 p) {
 }
 
 float GetLight(float3 p, float3 light) {
-    float3 l = -light;
+    float3 lightNormal = -light;
     float3 n = GetNormal(p);
     
-    float dif = clamp(dot(n, l), 0, 1);
-    float d = RayMarch(CreateRay(p + n * (SURFACE_DIST + 0.01f), l));
-    if (d < MAX_DIST) dif *= 0.1f;
+    float dif = saturate(dot(n * 0.5f + 0.5f, lightNormal));
+    //float2 d = RayMarch(CreateRay(p + n * (SURFACE_DIST + 0.01f), lightNormal));
+    //if (d.x < MAX_DIST) dif *= 0.1f;
     
     return dif;
 }
@@ -107,16 +115,22 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     float2 uv = float2((id.xy + float2(0.5f, 0.5f)) / float2(width, height) * 2.0f - 1.0f);
     
     Ray ray = CreateCameraRay(uv);
-    float d = RayMarch(ray);
+    float2 marchResult = RayMarch(ray);
+    float d = marchResult.x;
 
     if (d < MAX_DIST) {    
         float3 p = ray.origin + ray.direction * d;
+        
         uint numLights, stride;
         _DirectionalLights.GetDimensions(numLights, stride);
+        
         float dif = 0.0f;
         for (uint i = 0; i < numLights; i++)
             dif += GetLight(p, _DirectionalLights[i]);
-        float3 col = float3(dif, dif, dif);
+        
+        float3 color1 = saturate(dif * colorA);
+        float3 color2 = saturate((max(0, marchResult.y * marchResult.y - stepOffset)) / stepDivider * colorB);
+        float3 col = saturate(color1 + color2);
     
         Result[id.xy] = float4(col, 1.0);
     }

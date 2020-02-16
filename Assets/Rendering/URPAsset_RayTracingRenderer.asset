@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: URPAsset_RayTracingRenderer
   m_EditorClassIdentifier: 
   m_RendererFeatures:
-  - {fileID: 2636348973398999673}
+  - {fileID: 3146479870458409405}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
@@ -35,7 +35,7 @@ MonoBehaviour:
     passOperation: 0
     failOperation: 0
     zFailOperation: 0
---- !u!114 &2636348973398999673
+--- !u!114 &3146479870458409405
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

@@ -18,7 +18,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		public ComputeBuffer sphereBuffer;
 		public ComputeBuffer lightBuffer;
 
-		Transform sphereParent;
+		RayMarchingController rayMarchController;
 		GameObject[] sphereGOs;
 
 		struct Sphere {
@@ -32,13 +32,13 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		public RayMarchingPass(ComputeShader computeShader, string commandBufferName, LayerMask layerMask) {
 			this.computeShader = computeShader;
 			this.commandBufferName = commandBufferName;
-
-			sphereGOs = GameObject.FindGameObjectsWithTag("CloudPuff");
-			sphereParent = GameObject.Find("Spheres").transform;
 		}
 
 		public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
 			InitRenderTexture();
+
+			sphereGOs = GameObject.FindGameObjectsWithTag("CloudPuff");
+			rayMarchController = GameObject.FindGameObjectWithTag("RayMarchController").GetComponent<RayMarchingController>();
 
 			targetIdentifier = new RenderTargetIdentifier(target);
 			cmd.SetGlobalTexture("_RayMarchingTexture", targetIdentifier);
@@ -53,6 +53,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			cmd.Blit(source, targetIdentifier);
 
 			SetShaderParameters(cmd, renderingData.cameraData.camera);
+			BuildSphereBuffer(cmd);
 			BuildLightBuffer(cmd, renderingData.lightData.visibleLights);
 
 			cmd.SetComputeTextureParam(computeShader, 0, "Result", targetIdentifier);
@@ -87,22 +88,11 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			cmd.SetComputeMatrixParam(computeShader, "_CameraToWorld", camera.cameraToWorldMatrix);
 			cmd.SetComputeMatrixParam(computeShader, "_CameraInverseProjection", camera.projectionMatrix.inverse);
 			cmd.SetComputeFloatParam(computeShader, "_Time", Time.time);
-
-			//float3 + float = 4, 4 * 4 byte = 16 as stride
-			spheres.Clear();
-
-			foreach (GameObject sphere in sphereGOs)
-				spheres.Add(new Sphere() {
-					position = sphere.transform.position,
-					radius = Mathf.Max(sphere.transform.localScale.x, sphere.transform.localScale.y, sphere.transform.localScale.z) / 2f
-				});
-
-			sphereBuffer?.Release();
-			sphereBuffer = new ComputeBuffer(sphereGOs.Length, 16);
-			sphereBuffer.SetData(spheres);
-			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
-
-			cmd.SetComputeFloatParam(computeShader, "_Smoother", sphereParent.GetComponent<RayMarchingController>().smoother);
+			cmd.SetComputeFloatParam(computeShader, "smoother", rayMarchController.smoother);
+			cmd.SetComputeFloatParam(computeShader, "stepDivider", rayMarchController.stepDivider);
+			cmd.SetComputeFloatParam(computeShader, "stepOffset", rayMarchController.stepOffset);
+			cmd.SetComputeVectorParam(computeShader, "colorA", rayMarchController.colorA);
+			cmd.SetComputeVectorParam(computeShader, "colorB", rayMarchController.colorB);
 		}
 
 		void BuildLightBuffer(CommandBuffer cmd, NativeArray<VisibleLight> visibleLights) {
@@ -114,6 +104,22 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			lightBuffer = new ComputeBuffer(visibleLights.Length, 12);
 			lightBuffer.SetData(directionalLights);
 			cmd.SetComputeBufferParam(computeShader, 0, "_DirectionalLights", lightBuffer);
+		}
+
+		void BuildSphereBuffer(CommandBuffer cmd) {
+			//float3 + float = 4, 4 * 4 byte = 16 as stride
+			spheres.Clear();
+			sphereBuffer?.Release();
+			
+			foreach (GameObject sphere in sphereGOs)
+				spheres.Add(new Sphere() {
+					position = sphere.transform.position,
+					radius = Mathf.Max(sphere.transform.localScale.x, sphere.transform.localScale.y, sphere.transform.localScale.z) / 2f
+				});
+
+			sphereBuffer = new ComputeBuffer(sphereGOs.Length, 16);
+			sphereBuffer.SetData(spheres);
+			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
 		}
 	}
 
