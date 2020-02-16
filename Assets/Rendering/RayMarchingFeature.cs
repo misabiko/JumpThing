@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -14,6 +16,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		RenderTexture target;
 		RenderTargetIdentifier targetIdentifier;
 		public ComputeBuffer sphereBuffer;
+		public ComputeBuffer lightBuffer;
 
 		Transform sphereParent;
 
@@ -23,6 +26,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 		}
 
 		List<Sphere> spheres = new List<Sphere>();
+		List<Vector3> directionalLights = new List<Vector3>();
 
 		public RayMarchingPass(ComputeShader computeShader, string commandBufferName, LayerMask layerMask) {
 			this.computeShader = computeShader;
@@ -46,12 +50,17 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			//Copy camera's texture to target
 			cmd.Blit(source, targetIdentifier);
 
-			//Passing target to the compute shader and drawing on it
 			SetShaderParameters(cmd, renderingData.cameraData.camera);
+			BuildLightBuffer(cmd, renderingData.lightData.visibleLights);
+
 			cmd.SetComputeTextureParam(computeShader, 0, "Result", targetIdentifier);
-			int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
-			int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
-			cmd.DispatchCompute(computeShader, 0, threadGroupsX, threadGroupsY, 1);
+			cmd.DispatchCompute(
+				computeShader,
+				0,
+				Mathf.CeilToInt(Screen.width / 8.0f),
+				Mathf.CeilToInt(Screen.height / 8.0f),
+				1
+			);
 
 			//Then copying target back to camera's texture
 			cmd.Blit(targetIdentifier, source);
@@ -92,7 +101,16 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			cmd.SetComputeBufferParam(computeShader, 0, "_Spheres", sphereBuffer);
 		}
 
-		void OnDestroy() => sphereBuffer?.Release();
+		void BuildLightBuffer(CommandBuffer cmd, NativeArray<VisibleLight> visibleLights) {
+			directionalLights.Clear();
+			foreach (VisibleLight light in visibleLights.Where(light => light.lightType == LightType.Directional))
+				directionalLights.Add(light.light.transform.forward);
+
+			lightBuffer?.Release();
+			lightBuffer = new ComputeBuffer(visibleLights.Length, 12);
+			lightBuffer.SetData(directionalLights);
+			cmd.SetComputeBufferParam(computeShader, 0, "_DirectionalLights", lightBuffer);
+		}
 	}
 
 	[System.Serializable]

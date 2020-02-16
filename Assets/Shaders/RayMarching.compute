@@ -9,6 +9,8 @@ float _Time;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 
+StructuredBuffer<float3> _DirectionalLights;
+
 struct Sphere {
     float3 position;
     float radius;
@@ -83,15 +85,13 @@ float3 GetNormal(float3 p) {
     return normalize(n);
 }
 
-float GetLight(float3 p) {
-    float3 lightPos = float3(0, 5, 6);
-    lightPos.xy += float2(sin(_Time), cos(_Time));
-    float3 l = normalize(lightPos - p);
+float GetLight(float3 p, float3 light) {
+    float3 l = -light;
     float3 n = GetNormal(p);
     
     float dif = clamp(dot(n, l), 0, 1);
     float d = RayMarch(CreateRay(p + n * (SURFACE_DIST + 0.01f), l));
-    if (d < length(lightPos - p)) dif *= 0.1f;
+    if (d < MAX_DIST) dif *= 0.1f;
     
     return dif;
 }
@@ -106,9 +106,13 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     Ray ray = CreateCameraRay(uv);
     float d = RayMarch(ray);
 
-    if (d < 100.0f) {    
+    if (d < MAX_DIST) {    
         float3 p = ray.origin + ray.direction * d;
-        float dif = GetLight(p);
+        uint numLights, stride;
+        _DirectionalLights.GetDimensions(numLights, stride);
+        float dif = 0.0f;
+        for (uint i = 0; i < numLights; i++)
+            dif += GetLight(p, _DirectionalLights[i]);
         float3 col = float3(dif, dif, dif);
     
         Result[id.xy] = float4(col, 1.0);
