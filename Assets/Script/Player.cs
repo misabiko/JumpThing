@@ -1,5 +1,6 @@
 ﻿using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour {
 	public TextMeshProUGUI scoreText;
@@ -11,7 +12,13 @@ public class Player : MonoBehaviour {
 	Vector3 spawnPos;
 	Quaternion spawnRot;
 
-	void Awake() => movement = GetComponent<NewPlayerMovement>();
+	void Awake() {
+		movement = GetComponent<NewPlayerMovement>();
+
+		PlayerInput playerInput = GetComponent<PlayerInput>();
+
+		playerInput.actions["Pause"].started += _ => Debug.Break();
+	}
 
 	void Start() {
 		spawnPos = transform.position;
