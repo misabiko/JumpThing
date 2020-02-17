@@ -74,16 +74,8 @@ public class NewPlayerMovement : MonoBehaviour {
 		jumpAudio.Play();
 	}
 
-	bool IsGrounded() {
-		bool result = Physics.Raycast(transform.position + colliderBottom, Vector3.down, groundCheckDist, ~layerMask);
-		velText.text = "Grounded: " + result;
-		return result;
-	}
-
-	/*void OnDrawGizmos() {
-		Gizmos.color = Color.green;
-		Gizmos.DrawLine(transform.position + colliderBottom, transform.position + colliderBottom + Vector3.down * groundCheckDist);
-	}*/
+	bool IsGrounded() =>
+		Physics.Raycast(transform.position + colliderBottom, Vector3.down, groundCheckDist, ~layerMask);
 
 	void Update() {
 		Vector3 camForward = camTransform.forward;
@@ -99,7 +91,7 @@ public class NewPlayerMovement : MonoBehaviour {
 	}
 
 	void CheckSmokeParticles(float stickStrength) {
-		if (wasGrounded) {
+		if (!wasGrounded) {
 			if (smokeTrail.isPlaying)	//TODO PROFILEME might not be necessary
 				smokeTrail.Stop();
 			return;
@@ -156,9 +148,6 @@ public class NewPlayerMovement : MonoBehaviour {
 	}
 
 	void UpdateGrounding(bool isGrounded) {
-		/*if (isGrounded)
-			ResetYVel();*/
-		
 		anim.SetBool(AirBorn, !isGrounded);
 
 		if (isGrounded != wasGrounded) {
