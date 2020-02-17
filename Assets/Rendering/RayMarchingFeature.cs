@@ -57,6 +57,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			BuildLightBuffer(cmd, renderingData.lightData.visibleLights);
 
 			cmd.SetComputeTextureParam(computeShader, 0, "Result", targetIdentifier);
+			computeShader.SetTextureFromGlobal(0, "Depth", "_CameraDepthTexture");
 			cmd.DispatchCompute(
 				computeShader,
 				0,
@@ -91,6 +92,7 @@ public class RayMarchingFeature : ScriptableRendererFeature {
 			cmd.SetComputeFloatParam(computeShader, "smoother", rayMarchController.smoother);
 			cmd.SetComputeFloatParam(computeShader, "stepDivider", rayMarchController.stepDivider);
 			cmd.SetComputeFloatParam(computeShader, "stepOffset", rayMarchController.stepOffset);
+			cmd.SetComputeFloatParam(computeShader, "maxMarchDistance", rayMarchController.maxDistance);
 			cmd.SetComputeVectorParam(computeShader, "colorA", rayMarchController.colorA);
 			cmd.SetComputeVectorParam(computeShader, "colorB", rayMarchController.colorB);
 		}

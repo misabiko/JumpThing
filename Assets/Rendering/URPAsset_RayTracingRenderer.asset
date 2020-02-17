@@ -65,7 +65,7 @@ MonoBehaviour:
   m_Name: Ray Marching
   m_EditorClassIdentifier: 
   settings:
-    computeShader: {fileID: 7200000, guid: 4898c6232dd6d4a42b3e3a0b3175c122, type: 3}
+    computeShader: {fileID: 0}
     layerMask:
       serializedVersion: 2
       m_Bits: 0

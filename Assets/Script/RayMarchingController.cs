@@ -8,4 +8,5 @@ public class RayMarchingController : MonoBehaviour {
 	public Vector3 colorB;
 	public float stepDivider = 16f;
 	public float stepOffset = 2f;
+	public float maxDistance = 100f;
 }

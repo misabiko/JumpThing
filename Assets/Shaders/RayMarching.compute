@@ -2,9 +2,9 @@
 
 #define MAX_STEPS 100
 #define SURFACE_DIST .01
-#define MAX_DIST 100.
 
 RWTexture2D<float4> Result;
+Texture2D<float4> Depth;
 float _Time;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
@@ -13,6 +13,7 @@ float3 colorA;
 float3 colorB;
 float stepDivider;
 float stepOffset;
+float maxMarchDistance;
 
 StructuredBuffer<float3> _DirectionalLights;
 
@@ -60,7 +61,7 @@ float SmoothMin(float dstA, float dstB, float k) {
 float GetDist(float3 p) {
     uint numSpheres, stride;
     _Spheres.GetDimensions(numSpheres, stride);
-    float distance = MAX_DIST;
+    float distance = maxMarchDistance;
     
     for (uint i = 0; i < numSpheres; i++)
         distance = SmoothMin(distance, GetSphereDist(p, _Spheres[i]), smoother);
@@ -76,7 +77,7 @@ float2 RayMarch(Ray ray) {
         float newDist = GetDist(p);
         totalDistance += newDist;
         
-        if (newDist < SURFACE_DIST || totalDistance > MAX_DIST)
+        if (newDist < SURFACE_DIST || totalDistance > maxMarchDistance)
             break;
     } 
     
@@ -102,7 +103,7 @@ float GetLight(float3 p, float3 light) {
     
     float dif = saturate(dot(n * 0.5f + 0.5f, lightNormal));
     //float2 d = RayMarch(CreateRay(p + n * (SURFACE_DIST + 0.01f), lightNormal));
-    //if (d.x < MAX_DIST) dif *= 0.1f;
+    //if (d.x < maxMarchDistance) dif *= 0.1f;
     
     return dif;
 }
@@ -118,7 +119,8 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     float2 marchResult = RayMarch(ray);
     float d = marchResult.x;
 
-    if (d < MAX_DIST) {    
+    //if (d < maxMarchDistance && d < Result[id.xy].x * maxMarchDistance) {    
+    if (d < maxMarchDistance) {    
         float3 p = ray.origin + ray.direction * d;
         
         uint numLights, stride;
