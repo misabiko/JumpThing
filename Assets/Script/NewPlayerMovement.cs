@@ -26,6 +26,7 @@ public class NewPlayerMovement : MonoBehaviour {
 	public float runThreshold;	//Must match animator's transition conditions
 	public float jumpForce;
 	public float turnSpeed;
+	public float airBornAngle;
 	public float groundCheckDist;
 	
 	public float warmUpDelay;
@@ -43,7 +44,8 @@ public class NewPlayerMovement : MonoBehaviour {
 
 	public AudioSource jumpAudio;
 	public TextMeshProUGUI velText;
-	public float airBornAngle;
+
+	Vector3 drift;
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
@@ -153,11 +155,8 @@ public class NewPlayerMovement : MonoBehaviour {
 	}
 
 	void ApplyAirBornMovement() {
-		Vector3 force = new Vector3();
-		
-		force += moveDirection * accelAirBorn;
-
-		rigidbody.AddForce(force);
+		float dotMultiplier = Mathf.Abs(Vector3.Dot(transform.forward, moveDirection.normalized));
+		rigidbody.AddForce(moveDirection * (dotMultiplier * accelAirBorn));
 		
 		if (moveDirection != Vector3.zero)
 			AlignAirBornRotation();
@@ -190,6 +189,7 @@ public class NewPlayerMovement : MonoBehaviour {
 			sfxPlayer.Land();
 
 			playerMesh.localRotation = Quaternion.identity;
+			drift = Vector3.zero;
 		}
 
 		wasGrounded = isGrounded;
