@@ -16,9 +16,11 @@ public class NewPlayerMovement : MonoBehaviour {
 	public ParticleSystem smokePoof;
 	public ParticleSystem jumpParticles;
 	public SFXPlayer sfxPlayer;
+	public Transform playerMesh;
 	
 	public float accelJog;
 	public float accelRun;
+	public float accelAirBorn;
 	public float maxSpeedJog;
 	public float maxSpeedRun;
 	public float runThreshold;	//Must match animator's transition conditions
@@ -41,6 +43,7 @@ public class NewPlayerMovement : MonoBehaviour {
 
 	public AudioSource jumpAudio;
 	public TextMeshProUGUI velText;
+	public float airBornAngle;
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
@@ -104,6 +107,16 @@ public class NewPlayerMovement : MonoBehaviour {
 	}
 
 	void FixedUpdate() {
+		if (wasGrounded)
+			ApplyGroundedMovement();
+		else
+			ApplyAirBornMovement();
+
+		bool newGrounding = IsGrounded();
+		UpdateGrounding(newGrounding);
+	}
+
+	void ApplyGroundedMovement() {
 		Vector3 force = new Vector3();
 		float maxSpeed;
 		
@@ -115,6 +128,7 @@ public class NewPlayerMovement : MonoBehaviour {
 
 			maxSpeed = maxSpeedJog;
 		}else {
+			//Aligning the jog and run's linear functions
 			Vector3 direction = moveDirection.normalized;
 			force += (moveDirection - direction * runThreshold) * (accelRun + warmUpBoost) + direction * (runThreshold * accelJog);
 
@@ -127,14 +141,34 @@ public class NewPlayerMovement : MonoBehaviour {
 		rigidbody.AddForce(force);
 		ClampFlatVel(maxSpeed);
 		
-		if (moveDirection != Vector3.zero) {
-			Quaternion goalRot = Quaternion.LookRotation(moveDirection);
-			Quaternion slerp = Quaternion.Slerp(transform.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
-			
-			rigidbody.rotation = slerp;
-		}
+		if (moveDirection != Vector3.zero)
+			AlignGroundedRotation();
+	}
 
-		UpdateGrounding(IsGrounded());
+	void AlignGroundedRotation() {
+		Quaternion goalRot = Quaternion.LookRotation(moveDirection);
+		Quaternion slerp = Quaternion.Slerp(transform.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+			
+		rigidbody.rotation = slerp;
+	}
+
+	void ApplyAirBornMovement() {
+		Vector3 force = new Vector3();
+		
+		force += moveDirection * accelAirBorn;
+
+		rigidbody.AddForce(force);
+		
+		if (moveDirection != Vector3.zero)
+			AlignAirBornRotation();
+	}
+
+	void AlignAirBornRotation() {
+		Quaternion goalRot = Quaternion.Euler(airBornAngle * moveDirection.z, 0f, -airBornAngle * moveDirection.x);
+		
+		Quaternion slerp = Quaternion.Slerp(playerMesh.localRotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+			
+		playerMesh.localRotation = slerp;
 	}
 
 	void ClampFlatVel(float maxSpeed) {
@@ -150,9 +184,12 @@ public class NewPlayerMovement : MonoBehaviour {
 	void UpdateGrounding(bool isGrounded) {
 		anim.SetBool(AirBorn, !isGrounded);
 
-		if (isGrounded != wasGrounded) {
+		//if just landed
+		if (isGrounded && !wasGrounded) {
 			smokePoof.Play();
 			sfxPlayer.Land();
+
+			playerMesh.localRotation = Quaternion.identity;
 		}
 
 		wasGrounded = isGrounded;
