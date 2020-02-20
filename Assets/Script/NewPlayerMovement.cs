@@ -44,6 +44,7 @@ public class NewPlayerMovement : MonoBehaviour {
 
 	public AudioSource jumpAudio;
 	public TextMeshProUGUI velText;
+	
 
 	Vector3 drift;
 	new Collider collider;
@@ -51,6 +52,7 @@ public class NewPlayerMovement : MonoBehaviour {
 	float crouchFriction;
 	public float crouchThreshold = 0.2f;
 	bool crouch;
+	static readonly int Crouching = Animator.StringToHash("Crouching");
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
@@ -94,7 +96,7 @@ public class NewPlayerMovement : MonoBehaviour {
 		float stickStrength = moveDirection.magnitude;
 		anim.SetFloat(MoveInputMagnitude, stickStrength);
 		anim.SetFloat(MoveInputWithWarmUp, stickStrength + warmUpBoost);
-		CheckSmokeParticles(crouch || stickStrength > runThreshold);
+		CheckSmokeParticles(stickStrength > runThreshold || (crouch && rigidbody.velocity.sqrMagnitude > 0.01f));
 	}
 
 	void CheckSmokeParticles(bool hasSmoke) {
@@ -233,5 +235,12 @@ public class NewPlayerMovement : MonoBehaviour {
 	void SetCrouching(bool crouch) {
 		this.crouch = crouch;
 		collider.material.dynamicFriction = crouch ? crouchFriction : defaultFriction;
+		anim.SetBool(Crouching, crouch);
+		
+		if (crouch)
+			sfxPlayer.Drift();
+		else {
+			sfxPlayer.Stop();
+		}
 	}
 }
