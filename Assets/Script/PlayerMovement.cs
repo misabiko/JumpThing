@@ -96,13 +96,17 @@ public class PlayerMovement : MonoBehaviour {
 		float stickStrength = moveDirection.magnitude;
 		anim.SetFloat(MoveInputMagnitude, stickStrength);
 		anim.SetFloat(MoveInputWithWarmUp, stickStrength + warmUpBoost);
-		CheckSmokeParticles(stickStrength > runThreshold || (crouch && rigidbody.velocity.sqrMagnitude > 0.01f));
+		
+		bool crouchEffect = crouch && rigidbody.velocity.sqrMagnitude > 0.01f;
+		CheckCrouchEffects(stickStrength > runThreshold || crouchEffect, crouchEffect);
 	}
 
-	void CheckSmokeParticles(bool hasSmoke) {
+	void CheckCrouchEffects(bool hasSmoke, bool hasCrouchEffect) {
 		if (!wasGrounded) {
 			if (smokeTrail.isPlaying)	//TODO PROFILEME might not be necessary
 				smokeTrail.Stop();
+			if (sfxPlayer.DriftIsPlaying())
+				sfxPlayer.StopDrift();
 			return;
 		}
 
@@ -110,6 +114,11 @@ public class PlayerMovement : MonoBehaviour {
 			smokeTrail.Stop();
 		else if (!smokeTrail.isPlaying && hasSmoke)
 			smokeTrail.Play();
+
+		if (sfxPlayer.DriftIsPlaying() && !hasCrouchEffect)
+			sfxPlayer.StopDrift();
+		else if (!sfxPlayer.DriftIsPlaying() && hasCrouchEffect)
+			sfxPlayer.Drift();
 	}
 
 	void FixedUpdate() {
@@ -236,11 +245,5 @@ public class PlayerMovement : MonoBehaviour {
 		this.crouch = crouch;
 		collider.material.dynamicFriction = crouch ? crouchFriction : defaultFriction;
 		anim.SetBool(Crouching, crouch);
-		
-		if (crouch)
-			sfxPlayer.Drift();
-		else {
-			sfxPlayer.Stop();
-		}
 	}
 }

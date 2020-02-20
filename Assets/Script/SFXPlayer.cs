@@ -3,24 +3,17 @@
 public class SFXPlayer : MonoBehaviour {
 	public AudioClip stepClip;
 	public AudioClip landClip;
-	public AudioClip driftClip;
-	public float driftVolume = 0.2f;
+	public AudioSource generalSource;
+
+	public AudioSource driftSource;
+
+	public void Step() => generalSource.PlayOneShot(stepClip);
+
+	public void Land() => generalSource.PlayOneShot(landClip);
 	
-	AudioSource audioSource;
+	public void Drift() => driftSource.Play();
 
-	void Awake() => audioSource = GetComponent<AudioSource>();
+	public void StopDrift() => driftSource.Stop();
 
-	public void Step() => audioSource.PlayOneShot(stepClip);
-
-	public void Land() => audioSource.PlayOneShot(landClip);
-	
-	public void Drift() {
-		audioSource.volume = driftVolume;
-		audioSource.PlayOneShot(driftClip);
-	}
-
-	public void Stop() {
-		audioSource.Stop();
-		audioSource.volume = 1f;
-	}
+	public bool DriftIsPlaying() => driftSource.isPlaying;
 }
