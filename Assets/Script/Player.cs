@@ -7,12 +7,12 @@ public class Player : MonoBehaviour {
 	public int scoreOffset;
 	public float deathHeight;
 
-	NewPlayerMovement movement;
+	PlayerMovement movement;
 	int score;
 	Vector3 spawnPos;
 	Quaternion spawnRot;
 
-	void Awake() => movement = GetComponent<NewPlayerMovement>();
+	void Awake() => movement = GetComponent<PlayerMovement>();
 
 	void Start() {
 		spawnPos = transform.position;

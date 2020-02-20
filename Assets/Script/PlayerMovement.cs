@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -15,56 +16,75 @@ public class PlayerMovement : MonoBehaviour {
 	public ParticleSystem smokePoof;
 	public ParticleSystem jumpParticles;
 	public SFXPlayer sfxPlayer;
+	public Transform playerMesh;
 	
+	public float accelJog;
+	public float accelRun;
+	public float accelAirBorn;
 	public float maxSpeedJog;
 	public float maxSpeedRun;
 	public float runThreshold;	//Must match animator's transition conditions
 	public float jumpForce;
 	public float turnSpeed;
+	public float airBornAngle;
+	public float groundCheckDist;
 	
 	public float warmUpDelay;
 	public float warmUpSpeed;
 	public float maxWarmUp;
 
-	CharacterController characterController;
+	new Rigidbody rigidbody;
 	Vector2 moveInput;
 	Vector3 moveDirection;
-	Vector3 verticalVel;
 	bool wasGrounded;
 	Coroutine runWarmUp;
 	float warmUpBoost;
+	Vector3 colliderBottom;
+	LayerMask layerMask;
 
 	public AudioSource jumpAudio;
+	public TextMeshProUGUI velText;
+	
+
+	Vector3 drift;
+	new Collider collider;
+	float defaultFriction;
+	float crouchFriction;
+	public float crouchThreshold = 0.2f;
+	bool crouch;
+	static readonly int Crouching = Animator.StringToHash("Crouching");
 
 	void Awake() {
-		characterController = GetComponent<CharacterController>();
-		
-		PlayerInput playerInput = GetComponent<PlayerInput>();
+		rigidbody = GetComponent<Rigidbody>();
+		collider = GetComponent<Collider>();
+		defaultFriction = collider.material.dynamicFriction;
+		crouchFriction = 0f;
 
-		playerInput.actions["Move"].started += OnMove;
-		playerInput.actions["Move"].performed += OnMove;
-		playerInput.actions["Move"].canceled += OnMove;
+		colliderBottom = Vector3.down * (GetComponent<CapsuleCollider>().height / 2f - 0.01f);
 
-		playerInput.actions["Jump"].started += OnJump;
-		playerInput.actions["Jump"].performed += OnJump;
-		playerInput.actions["Jump"].canceled += OnJump;
+		layerMask = LayerMask.GetMask("Player");
 	}
 
-	void OnMove(InputAction.CallbackContext context) {
+	public void OnMove(InputAction.CallbackContext context) {
 		moveInput = context.ReadValue<Vector2>();
 		if (moveInput.sqrMagnitude > 1f)
 			moveInput.Normalize();
 	}
 
-	void OnJump(InputAction.CallbackContext context) {
-		if (!characterController.isGrounded) return;
+	public void OnJump(InputAction.CallbackContext context) {
+		if (!context.performed) return;
 		
-		verticalVel.y = jumpForce;
+		if (!IsGrounded()) return;
+		
+		rigidbody.AddForce(jumpForce * Vector3.up, ForceMode.Impulse);
 		anim.SetTrigger(Jump);
 		anim.SetBool(AirBorn, true);
 		jumpParticles.Play();
 		jumpAudio.Play();
 	}
+
+	bool IsGrounded() =>
+		Physics.Raycast(transform.position + colliderBottom, Vector3.down, groundCheckDist, ~layerMask);
 
 	void Update() {
 		Vector3 camForward = camTransform.forward;
@@ -76,71 +96,118 @@ public class PlayerMovement : MonoBehaviour {
 		float stickStrength = moveDirection.magnitude;
 		anim.SetFloat(MoveInputMagnitude, stickStrength);
 		anim.SetFloat(MoveInputWithWarmUp, stickStrength + warmUpBoost);
-		CheckSmokeParticles(stickStrength);
+		CheckSmokeParticles(stickStrength > runThreshold || (crouch && rigidbody.velocity.sqrMagnitude > 0.01f));
 	}
 
-	void CheckSmokeParticles(float stickStrength) {
-		if (!characterController.isGrounded) {
+	void CheckSmokeParticles(bool hasSmoke) {
+		if (!wasGrounded) {
 			if (smokeTrail.isPlaying)	//TODO PROFILEME might not be necessary
 				smokeTrail.Stop();
 			return;
 		}
 
-		if (smokeTrail.isPlaying && stickStrength <= runThreshold)
+		if (smokeTrail.isPlaying && !hasSmoke)
 			smokeTrail.Stop();
-		else if (!smokeTrail.isPlaying && stickStrength > runThreshold)
+		else if (!smokeTrail.isPlaying && hasSmoke)
 			smokeTrail.Play();
 	}
 
 	void FixedUpdate() {
-		verticalVel += Physics.gravity;
+		if (!crouch) {
+			if (wasGrounded)
+				ApplyGroundedMovement();
+			else
+				ApplyAirBornMovement();
+		}
 
-		Vector3 velocity = verticalVel;
+		bool newGrounding = IsGrounded();
+		UpdateGrounding(newGrounding);
+	}
+
+	void ApplyGroundedMovement() {
+		Vector3 force = new Vector3();
+		float maxSpeed;
+		
 		if (moveDirection.sqrMagnitude <= runThreshold * runThreshold) {
-			velocity += moveDirection * maxSpeedJog;
+			force += moveDirection * accelJog;
 			
 			if (runWarmUp != null)
 				StopWarmUp();
+
+			maxSpeed = maxSpeedJog;
 		}else {
+			//Aligning the jog and run's linear functions
 			Vector3 direction = moveDirection.normalized;
-			velocity += (moveDirection - direction * runThreshold) * (maxSpeedRun + warmUpBoost) + direction * (runThreshold * maxSpeedJog);
+			force += (moveDirection - direction * runThreshold) * (accelRun + warmUpBoost) + direction * (runThreshold * accelJog);
 
 			if (runWarmUp == null)
 				runWarmUp = StartCoroutine(WarmUpRun());
+
+			maxSpeed = maxSpeedRun;
 		}
 
-		characterController.Move(velocity * Time.fixedDeltaTime);
+		rigidbody.AddForce(force);
+		ClampFlatVel(maxSpeed);
 		
-		if (moveDirection != Vector3.zero) {
-			Quaternion goalRot = Quaternion.LookRotation(moveDirection);
-			Quaternion slerp = Quaternion.Slerp(transform.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
-			
-			transform.rotation = slerp;
-		}
+		if (moveDirection != Vector3.zero)
+			AlignGroundedRotation();
+	}
 
-		UpdateGrounding(characterController.isGrounded);
+	void AlignGroundedRotation() {
+		Quaternion goalRot = Quaternion.LookRotation(moveDirection);
+		Quaternion slerp = Quaternion.Slerp(transform.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+			
+		rigidbody.rotation = slerp;
+	}
+
+	void ApplyAirBornMovement() {
+		float dotMultiplier = Mathf.Abs(Vector3.Dot(transform.forward, moveDirection.normalized));
+		rigidbody.AddForce(moveDirection * (dotMultiplier * accelAirBorn));
+		
+		if (moveDirection != Vector3.zero)
+			AlignAirBornRotation();
+	}
+
+	void AlignAirBornRotation() {
+		Quaternion goalRot = Quaternion.Euler(airBornAngle * moveDirection.z, 0f, -airBornAngle * moveDirection.x);
+		
+		Quaternion slerp = Quaternion.Slerp(playerMesh.localRotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+			
+		playerMesh.localRotation = slerp;
+	}
+
+	void ClampFlatVel(float maxSpeed) {
+		Vector3 flatVel = rigidbody.velocity;
+		flatVel.y = 0;
+
+		if (flatVel.magnitude > maxSpeed)
+			flatVel = flatVel.normalized * maxSpeed;
+		flatVel.y = rigidbody.velocity.y;
+		rigidbody.velocity = flatVel;
 	}
 
 	void UpdateGrounding(bool isGrounded) {
-		if (isGrounded)
-			verticalVel = Vector3.zero;
-		
 		anim.SetBool(AirBorn, !isGrounded);
 
-		if (isGrounded != wasGrounded) {
+		//if just landed
+		if (isGrounded && !wasGrounded) {
 			smokePoof.Play();
 			sfxPlayer.Land();
+
+			playerMesh.localRotation = Quaternion.identity;
+			drift = Vector3.zero;
 		}
 
 		wasGrounded = isGrounded;
 	}
 
 	public void Teleport(Vector3 pos, Quaternion rot) {
-		characterController.enabled = false;
-		verticalVel = Vector3.zero;
-		transform.SetPositionAndRotation(pos, rot);
-		characterController.enabled = true;
+		ResetYVel();
+		rigidbody.position = pos;
+		rigidbody.rotation = rot;
 	}
+
+	void ResetYVel() => rigidbody.velocity = new Vector3(rigidbody.velocity.x, 0f, rigidbody.velocity.z);
 
 	IEnumerator WarmUpRun() {
 		yield return new WaitForSeconds(warmUpDelay);
@@ -161,5 +228,19 @@ public class PlayerMovement : MonoBehaviour {
 		StopCoroutine(runWarmUp);
 		runWarmUp = null;
 		warmUpBoost = 0f;
+	}
+
+	public void OnCrouch(InputAction.CallbackContext context) => SetCrouching(context.ReadValue<float>() > crouchThreshold);
+
+	void SetCrouching(bool crouch) {
+		this.crouch = crouch;
+		collider.material.dynamicFriction = crouch ? crouchFriction : defaultFriction;
+		anim.SetBool(Crouching, crouch);
+		
+		if (crouch)
+			sfxPlayer.Drift();
+		else {
+			sfxPlayer.Stop();
+		}
 	}
 }
