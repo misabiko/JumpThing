@@ -12,13 +12,7 @@ public class Player : MonoBehaviour {
 	Vector3 spawnPos;
 	Quaternion spawnRot;
 
-	void Awake() {
-		movement = GetComponent<NewPlayerMovement>();
-
-		PlayerInput playerInput = GetComponent<PlayerInput>();
-
-		playerInput.actions["Pause"].started += _ => Debug.Break();
-	}
+	void Awake() => movement = GetComponent<NewPlayerMovement>();
 
 	void Start() {
 		spawnPos = transform.position;
@@ -43,5 +37,10 @@ public class Player : MonoBehaviour {
 		
 		score = Mathf.Max(score, (int)distance.magnitude - scoreOffset);
 		scoreText.text = "Score: " + score;
+	}
+
+	public void OnPause(InputAction.CallbackContext context) {
+		if (context.performed)
+			Debug.Break();
 	}
 }

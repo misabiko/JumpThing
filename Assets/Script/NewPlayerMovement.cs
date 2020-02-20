@@ -49,27 +49,21 @@ public class NewPlayerMovement : MonoBehaviour {
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
-		
-		PlayerInput playerInput = GetComponent<PlayerInput>();
-
-		playerInput.actions["Move"].started += OnMove;
-		playerInput.actions["Move"].performed += OnMove;
-		playerInput.actions["Move"].canceled += OnMove;
-
-		playerInput.actions["Jump"].started += OnJump;
 
 		colliderBottom = Vector3.down * (GetComponent<CapsuleCollider>().height / 2f - 0.01f);
 
 		layerMask = LayerMask.GetMask("Player");
 	}
 
-	void OnMove(InputAction.CallbackContext context) {
+	public void OnMove(InputAction.CallbackContext context) {
 		moveInput = context.ReadValue<Vector2>();
 		if (moveInput.sqrMagnitude > 1f)
 			moveInput.Normalize();
 	}
 
-	void OnJump(InputAction.CallbackContext context) {
+	public void OnJump(InputAction.CallbackContext context) {
+		if (!context.performed) return;
+		
 		if (!IsGrounded()) return;
 		
 		rigidbody.AddForce(jumpForce * Vector3.up, ForceMode.Impulse);
