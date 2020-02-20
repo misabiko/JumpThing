@@ -46,9 +46,17 @@ public class NewPlayerMovement : MonoBehaviour {
 	public TextMeshProUGUI velText;
 
 	Vector3 drift;
+	new Collider collider;
+	float defaultFriction;
+	float crouchFriction;
+	public float crouchThreshold = 0.2f;
+	bool crouch;
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
+		collider = GetComponent<Collider>();
+		defaultFriction = collider.material.dynamicFriction;
+		crouchFriction = 0f;
 
 		colliderBottom = Vector3.down * (GetComponent<CapsuleCollider>().height / 2f - 0.01f);
 
@@ -86,27 +94,29 @@ public class NewPlayerMovement : MonoBehaviour {
 		float stickStrength = moveDirection.magnitude;
 		anim.SetFloat(MoveInputMagnitude, stickStrength);
 		anim.SetFloat(MoveInputWithWarmUp, stickStrength + warmUpBoost);
-		CheckSmokeParticles(stickStrength);
+		CheckSmokeParticles(crouch || stickStrength > runThreshold);
 	}
 
-	void CheckSmokeParticles(float stickStrength) {
+	void CheckSmokeParticles(bool hasSmoke) {
 		if (!wasGrounded) {
 			if (smokeTrail.isPlaying)	//TODO PROFILEME might not be necessary
 				smokeTrail.Stop();
 			return;
 		}
 
-		if (smokeTrail.isPlaying && stickStrength <= runThreshold)
+		if (smokeTrail.isPlaying && !hasSmoke)
 			smokeTrail.Stop();
-		else if (!smokeTrail.isPlaying && stickStrength > runThreshold)
+		else if (!smokeTrail.isPlaying && hasSmoke)
 			smokeTrail.Play();
 	}
 
 	void FixedUpdate() {
-		if (wasGrounded)
-			ApplyGroundedMovement();
-		else
-			ApplyAirBornMovement();
+		if (!crouch) {
+			if (wasGrounded)
+				ApplyGroundedMovement();
+			else
+				ApplyAirBornMovement();
+		}
 
 		bool newGrounding = IsGrounded();
 		UpdateGrounding(newGrounding);
@@ -216,5 +226,12 @@ public class NewPlayerMovement : MonoBehaviour {
 		StopCoroutine(runWarmUp);
 		runWarmUp = null;
 		warmUpBoost = 0f;
+	}
+
+	public void OnCrouch(InputAction.CallbackContext context) => SetCrouching(context.ReadValue<float>() > crouchThreshold);
+
+	void SetCrouching(bool crouch) {
+		this.crouch = crouch;
+		collider.material.dynamicFriction = crouch ? crouchFriction : defaultFriction;
 	}
 }
