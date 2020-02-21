@@ -178,11 +178,11 @@ public class PlayerMovement : MonoBehaviour {
 	}
 
 	void AlignAirBornRotation() {
-		Quaternion goalRot = Quaternion.Euler(airBornAngle * moveDirection.z, 0f, -airBornAngle * moveDirection.x);
+		Quaternion goalRot = Quaternion.Euler(airBornAngle * moveInput.y, playerMesh.rotation.eulerAngles.y, -airBornAngle * moveInput.x);
 		
-		Quaternion slerp = Quaternion.Slerp(playerMesh.localRotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+		Quaternion slerp = Quaternion.Slerp(playerMesh.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
 			
-		playerMesh.localRotation = slerp;
+		playerMesh.rotation = slerp;
 	}
 
 	void ClampFlatVel(float maxSpeed) {
