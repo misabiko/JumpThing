@@ -17,6 +17,7 @@ public class PlayerMovement : MonoBehaviour {
 	public ParticleSystem jumpParticles;
 	public SFXPlayer sfxPlayer;
 	public Transform playerMesh;
+	public SimpleAnimation camAnim;
 	
 	public float accelJog;
 	public float accelRun;
@@ -106,7 +107,7 @@ public class PlayerMovement : MonoBehaviour {
 			if (smokeTrail.isPlaying)	//TODO PROFILEME might not be necessary
 				smokeTrail.Stop();
 			if (sfxPlayer.DriftIsPlaying())
-				sfxPlayer.StopDrift();
+				StopCrouchEffects();
 			return;
 		}
 
@@ -116,9 +117,19 @@ public class PlayerMovement : MonoBehaviour {
 			smokeTrail.Play();
 
 		if (sfxPlayer.DriftIsPlaying() && !hasCrouchEffect)
-			sfxPlayer.StopDrift();
+			StopCrouchEffects();
 		else if (!sfxPlayer.DriftIsPlaying() && hasCrouchEffect)
-			sfxPlayer.Drift();
+			PlayCrouchEffects();
+	}
+
+	void PlayCrouchEffects() {
+		sfxPlayer.Drift();
+		camAnim.Play("ZoomIn");
+	}
+
+	void StopCrouchEffects() {
+		sfxPlayer.StopDrift();
+		camAnim.Play("ZoomOut");
 	}
 
 	void FixedUpdate() {
