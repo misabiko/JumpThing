@@ -6,6 +6,4 @@ I'm also experimenting with cloud rendering, since I want to make a Skyward Swor
 
 Still in very early and very slow development
 
-https://misabiko.itch.io/jumpthing
-
 ![Early Screenshot](https://img.itch.zone/aW1hZ2UvNTc2OTc5LzMwMzcxNDcucG5n/347x500/zVYvla.png)
