@@ -3,6 +3,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour {
 	static readonly int MoveInputMagnitude = Animator.StringToHash("MoveInputMagnitude");
@@ -18,6 +19,7 @@ public class PlayerMovement : MonoBehaviour {
 	public SFXPlayer sfxPlayer;
 	public Transform playerMesh;
 	public SimpleAnimation camAnim;
+	public Slider velocityBar;
 	
 	public float accelJog;
 	public float accelRun;
@@ -66,6 +68,8 @@ public class PlayerMovement : MonoBehaviour {
 		layerMask = LayerMask.GetMask("Player");
 	}
 
+	void Start() => velocityBar.maxValue = 1f + maxWarmUp;
+
 	public void OnMove(InputAction.CallbackContext context) {
 		moveInput = context.ReadValue<Vector2>();
 		if (moveInput.sqrMagnitude > 1f)
@@ -97,7 +101,11 @@ public class PlayerMovement : MonoBehaviour {
 		float stickStrength = moveDirection.magnitude;
 		anim.SetFloat(MoveInputMagnitude, stickStrength);
 		anim.SetFloat(MoveInputWithWarmUp, stickStrength + warmUpBoost);
-		
+		if (!crouch && wasGrounded)
+			velocityBar.value = stickStrength + warmUpBoost;
+		else
+			velocityBar.value = 0f;
+
 		bool crouchEffect = crouch && rigidbody.velocity.sqrMagnitude > 0.01f;
 		CheckCrouchEffects(stickStrength > runThreshold || crouchEffect, crouchEffect);
 	}
