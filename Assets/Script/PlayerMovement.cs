@@ -11,20 +11,18 @@ public class PlayerMovement : MonoBehaviour {
 	static readonly int Jump = Animator.StringToHash("Jump");
 	static readonly int AirBorn = Animator.StringToHash("AirBorn");
 	static readonly int MoveInputWithWarmUp = Animator.StringToHash("MoveInput+WarmUpBoost");
+	static readonly int Crouching = Animator.StringToHash("Crouching");
 	
 	public Transform camTransform;
-	public Animator anim;
-	public ParticleSystem smokeTrail;
-	public ParticleSystem smokePoof;
-	public ParticleSystem jumpParticles;
-	public SFXPlayer sfxPlayer;
-	public Transform playerMesh;
-	public SimpleAnimation camAnim;
 	public Slider velocityBar;
 
 	public PlayerData data;
 
 	new Rigidbody rigidbody;
+	Animator anim;
+	Transform playerMesh;
+	PlayerFX playerFX;
+	
 	Vector2 moveInput;
 	Vector3 moveDirection;
 	bool wasGrounded;
@@ -33,23 +31,22 @@ public class PlayerMovement : MonoBehaviour {
 	Vector3 colliderBottom;
 	LayerMask layerMask;
 
-	public AudioSource jumpAudio;
-	public TextMeshProUGUI velText;
-	
-
-	Vector3 drift;
 	new Collider collider;
 	float defaultFriction;
 	float crouchFriction;
-	public float crouchThreshold = 0.2f;
 	bool crouch;
-	static readonly int Crouching = Animator.StringToHash("Crouching");
 
 	void Awake() {
 		rigidbody = GetComponent<Rigidbody>();
+		
+		anim = GetComponentInChildren<Animator>();
+		playerMesh = anim.transform;
+		
 		collider = GetComponent<Collider>();
 		defaultFriction = collider.material.dynamicFriction;
 		crouchFriction = 0f;
+
+		playerFX = GetComponentInChildren<PlayerFX>();
 
 		colliderBottom = Vector3.down * (GetComponent<CapsuleCollider>().height / 2f - 0.01f);
 
@@ -95,37 +92,7 @@ public class PlayerMovement : MonoBehaviour {
 			velocityBar.value = 0f;
 
 		bool crouchEffect = crouch && rigidbody.velocity.sqrMagnitude > 0.01f;
-		CheckCrouchEffects(stickStrength > data.runThreshold || crouchEffect, crouchEffect);
-	}
-
-	void CheckCrouchEffects(bool hasSmoke, bool hasCrouchEffect) {
-		if (!wasGrounded) {
-			if (smokeTrail.isPlaying)	//TODO PROFILEME might not be necessary
-				smokeTrail.Stop();
-			if (sfxPlayer.DriftIsPlaying())
-				StopCrouchEffects();
-			return;
-		}
-
-		if (smokeTrail.isPlaying && !hasSmoke)
-			smokeTrail.Stop();
-		else if (!smokeTrail.isPlaying && hasSmoke)
-			smokeTrail.Play();
-
-		if (sfxPlayer.DriftIsPlaying() && !hasCrouchEffect)
-			StopCrouchEffects();
-		else if (!sfxPlayer.DriftIsPlaying() && hasCrouchEffect)
-			PlayCrouchEffects();
-	}
-
-	void PlayCrouchEffects() {
-		sfxPlayer.Drift();
-		camAnim.Play("ZoomIn");
-	}
-
-	void StopCrouchEffects() {
-		sfxPlayer.StopDrift();
-		camAnim.Play("ZoomOut");
+		playerFX.CheckCrouchEffects(stickStrength > data.runThreshold || crouchEffect, crouchEffect, wasGrounded);
 	}
 
 	void FixedUpdate() {
@@ -207,11 +174,9 @@ public class PlayerMovement : MonoBehaviour {
 
 		//if just landed
 		if (isGrounded && !wasGrounded) {
-			smokePoof.Play();
-			sfxPlayer.Land();
+			playerFX.LandingPoof();
 
 			playerMesh.localRotation = Quaternion.identity;
-			drift = Vector3.zero;
 		}
 
 		wasGrounded = isGrounded;
@@ -246,7 +211,7 @@ public class PlayerMovement : MonoBehaviour {
 		warmUpBoost = 0f;
 	}
 
-	public void OnCrouch(InputAction.CallbackContext context) => SetCrouching(context.ReadValue<float>() > crouchThreshold);
+	public void OnCrouch(InputAction.CallbackContext context) => SetCrouching(context.ReadValue<float>() > data.crouchThreshold);
 
 	void SetCrouching(bool crouch) {
 		this.crouch = crouch;

@@ -22,5 +22,7 @@ namespace Script {
 		public float warmUpDelay = 1.5f;
 		public float warmUpSpeed = 0.001f;
 		public float maxWarmUp = 0.5f;
+		
+		public float crouchThreshold = 0.2f;
 	}
 }
