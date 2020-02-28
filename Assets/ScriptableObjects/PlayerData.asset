@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11df2c0b06a34e0eaafd250c821e7fe9, type: 3}
+  m_Name: PlayerData
+  m_EditorClassIdentifier: 
+  accelJog: 300
+  accelRun: 350
+  accelAirBorn: 10
+  maxSpeedJog: 5
+  maxSpeedRun: 20
+  runThreshold: 0.95
+  jumpForce: 50
+  turnSpeed: 10
+  airBornAngle: 20
+  groundCheckDist: 0.1
+  warmUpDelay: 1.5
+  warmUpSpeed: 0.001
+  maxWarmUp: 0.5

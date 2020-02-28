@@ -1,11 +1,11 @@
-﻿using TMPro;
+﻿using Script;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour {
+	public PlayerData data;
 	public TextMeshProUGUI scoreText;
-	public int scoreOffset;
-	public float deathHeight;
 
 	PlayerMovement movement;
 	int score;
@@ -22,7 +22,7 @@ public class Player : MonoBehaviour {
 	void LateUpdate() {
 		UpdateScore();
 		
-		if (transform.position.y < deathHeight)
+		if (transform.position.y < data.deathHeight)
 			Death();
 	}
 
@@ -35,7 +35,7 @@ public class Player : MonoBehaviour {
 		Vector3 distance = transform.position;
 		distance.y = 0;
 		
-		score = Mathf.Max(score, (int)distance.magnitude - scoreOffset);
+		score = Mathf.Max(score, (int)distance.magnitude - data.scoreOffset);
 		scoreText.text = "Score: " + score;
 	}
 

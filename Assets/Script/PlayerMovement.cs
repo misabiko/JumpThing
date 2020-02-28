@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using Script;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -20,21 +21,8 @@ public class PlayerMovement : MonoBehaviour {
 	public Transform playerMesh;
 	public SimpleAnimation camAnim;
 	public Slider velocityBar;
-	
-	public float accelJog;
-	public float accelRun;
-	public float accelAirBorn;
-	public float maxSpeedJog;
-	public float maxSpeedRun;
-	public float runThreshold;	//Must match animator's transition conditions
-	public float jumpForce;
-	public float turnSpeed;
-	public float airBornAngle;
-	public float groundCheckDist;
-	
-	public float warmUpDelay;
-	public float warmUpSpeed;
-	public float maxWarmUp;
+
+	public PlayerData data;
 
 	new Rigidbody rigidbody;
 	Vector2 moveInput;
@@ -68,7 +56,7 @@ public class PlayerMovement : MonoBehaviour {
 		layerMask = LayerMask.GetMask("Player");
 	}
 
-	void Start() => velocityBar.maxValue = 1f + maxWarmUp;
+	void Start() => velocityBar.maxValue = 1f + data.maxWarmUp;
 
 	public void OnMove(InputAction.CallbackContext context) {
 		moveInput = context.ReadValue<Vector2>();
@@ -81,7 +69,7 @@ public class PlayerMovement : MonoBehaviour {
 		
 		if (!IsGrounded()) return;
 		
-		rigidbody.AddForce(jumpForce * Vector3.up, ForceMode.Impulse);
+		rigidbody.AddForce(data.jumpForce * Vector3.up, ForceMode.Impulse);
 		anim.SetTrigger(Jump);
 		anim.SetBool(AirBorn, true);
 		//jumpParticles.Play();
@@ -89,7 +77,7 @@ public class PlayerMovement : MonoBehaviour {
 	}
 
 	bool IsGrounded() =>
-		Physics.Raycast(transform.position + colliderBottom, Vector3.down, groundCheckDist, ~layerMask);
+		Physics.Raycast(transform.position + colliderBottom, Vector3.down, data.groundCheckDist, ~layerMask);
 
 	void Update() {
 		Vector3 camForward = camTransform.forward;
@@ -107,7 +95,7 @@ public class PlayerMovement : MonoBehaviour {
 			velocityBar.value = 0f;
 
 		bool crouchEffect = crouch && rigidbody.velocity.sqrMagnitude > 0.01f;
-		CheckCrouchEffects(stickStrength > runThreshold || crouchEffect, crouchEffect);
+		CheckCrouchEffects(stickStrength > data.runThreshold || crouchEffect, crouchEffect);
 	}
 
 	void CheckCrouchEffects(bool hasSmoke, bool hasCrouchEffect) {
@@ -156,22 +144,22 @@ public class PlayerMovement : MonoBehaviour {
 		Vector3 force = new Vector3();
 		float maxSpeed;
 		
-		if (moveDirection.sqrMagnitude <= runThreshold * runThreshold) {
-			force += moveDirection * accelJog;
+		if (moveDirection.sqrMagnitude <= data.runThreshold * data.runThreshold) {
+			force += moveDirection * data.accelJog;
 			
 			if (runWarmUp != null)
 				StopWarmUp();
 
-			maxSpeed = maxSpeedJog;
+			maxSpeed = data.maxSpeedJog;
 		}else {
 			//Aligning the jog and run's linear functions
 			Vector3 direction = moveDirection.normalized;
-			force += (moveDirection - direction * runThreshold) * (accelRun + warmUpBoost) + direction * (runThreshold * accelJog);
+			force += (moveDirection - direction * data.runThreshold) * (data.accelRun + warmUpBoost) + direction * (data.runThreshold * data.accelJog);
 
 			if (runWarmUp == null)
 				runWarmUp = StartCoroutine(WarmUpRun());
 
-			maxSpeed = maxSpeedRun;
+			maxSpeed = data.maxSpeedRun;
 		}
 
 		rigidbody.AddForce(force);
@@ -183,23 +171,23 @@ public class PlayerMovement : MonoBehaviour {
 
 	void AlignGroundedRotation() {
 		Quaternion goalRot = Quaternion.LookRotation(moveDirection);
-		Quaternion slerp = Quaternion.Slerp(transform.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+		Quaternion slerp = Quaternion.Slerp(transform.rotation, goalRot, data.turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
 			
 		rigidbody.rotation = slerp;
 	}
 
 	void ApplyAirBornMovement() {
 		float dotMultiplier = Mathf.Abs(Vector3.Dot(transform.forward, moveDirection.normalized));
-		rigidbody.AddForce(moveDirection * (dotMultiplier * accelAirBorn));
+		rigidbody.AddForce(moveDirection * (dotMultiplier * data.accelAirBorn));
 		
 		if (moveDirection != Vector3.zero)
 			AlignAirBornRotation();
 	}
 
 	void AlignAirBornRotation() {
-		Quaternion goalRot = Quaternion.Euler(airBornAngle * moveInput.y, playerMesh.rotation.eulerAngles.y, -airBornAngle * moveInput.x);
+		Quaternion goalRot = Quaternion.Euler(data.airBornAngle * moveInput.y, playerMesh.rotation.eulerAngles.y, -data.airBornAngle * moveInput.x);
 		
-		Quaternion slerp = Quaternion.Slerp(playerMesh.rotation, goalRot, turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
+		Quaternion slerp = Quaternion.Slerp(playerMesh.rotation, goalRot, data.turnSpeed * moveDirection.magnitude * Time.fixedDeltaTime);
 			
 		playerMesh.rotation = slerp;
 	}
@@ -238,13 +226,13 @@ public class PlayerMovement : MonoBehaviour {
 	void ResetYVel() => rigidbody.velocity = new Vector3(rigidbody.velocity.x, 0f, rigidbody.velocity.z);
 
 	IEnumerator WarmUpRun() {
-		yield return new WaitForSeconds(warmUpDelay);
+		yield return new WaitForSeconds(data.warmUpDelay);
 
 		while (true) {
-			warmUpBoost += warmUpSpeed;
+			warmUpBoost += data.warmUpSpeed;
 			
-			if (warmUpBoost >= maxWarmUp) {
-				warmUpBoost = maxWarmUp;
+			if (warmUpBoost >= data.maxWarmUp) {
+				warmUpBoost = data.maxWarmUp;
 				break;
 			}
 			
