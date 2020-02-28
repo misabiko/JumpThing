@@ -84,8 +84,8 @@ public class PlayerMovement : MonoBehaviour {
 		rigidbody.AddForce(jumpForce * Vector3.up, ForceMode.Impulse);
 		anim.SetTrigger(Jump);
 		anim.SetBool(AirBorn, true);
-		jumpParticles.Play();
-		jumpAudio.Play();
+		//jumpParticles.Play();
+		//jumpAudio.Play();
 	}
 
 	bool IsGrounded() =>
